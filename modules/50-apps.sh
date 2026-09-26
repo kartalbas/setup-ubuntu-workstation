@@ -56,6 +56,8 @@ tar_app_install() {
   local key="$1" name="$2" bin="$3" want dir file
   want="$(ver "${key}_VERSION")"; dir="/opt/$name-$want"
   if [[ -x "$dir/$bin" && "$(readlink /usr/local/bin/"$name")" == "$dir/$bin" ]]; then
+    # Unpacked earlier with the archive's owners (before --no-same-owner).
+    if [[ -n "$(find "$dir" ! -user root -print -quit)" ]]; then run chown -R root:root "$dir"; fi
     log_ok "$name $want already installed"; return 0
   fi
   file="$(fetch "$key")"
