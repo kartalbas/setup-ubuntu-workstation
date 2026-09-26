@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+# Managed by setup-ubuntu-workstation: Claude Code on one of your own LLM
+# servers, with URL, token and model from OpenCode's config
+# (~/.config/opencode/opencode.json), so they live in one place only.
+#   claude-llm NAME [claude arguments]      claude-NAME [claude arguments]
+#   claude-llm --list
+# The server has to speak Anthropic's Messages API, as llama.cpp's
+# llama-server does. Anthropic does not support non-Claude models in Claude
+# Code: it works, but a Claude Code update may break it.
+import json
+import os
+import sys
+
+CONFIG = os.path.expanduser('~/.config/opencode/opencode.json')
+
+
+def main():
+    prog, args = os.path.basename(sys.argv[0]), sys.argv[1:]
+    try:
+        with open(CONFIG) as f:
+            servers = json.load(f).get('provider', {})
+    except OSError:
+        sys.exit(f'{prog}: no {CONFIG} yet — set it up with: ./setup.sh opencode')
+    if prog.startswith('claude-') and prog != 'claude-llm':
+        name = prog[len('claude-'):]
+    elif args and args[0] not in ('-h', '--help', '--list'):
+        name, args = args[0], args[1:]
+    else:
+        for name, server in servers.items():
+            print(f"claude-{name:12} {server.get('options', {}).get('baseURL', '')}")
+        sys.exit(0 if args and args[0] == '--list' else 2)
+    server = servers.get(name) or sys.exit(f'{prog}: no server "{name}" in {CONFIG} (there: {", ".join(servers)})')
+    options = server.get('options', {})
+    model = next(iter(server.get('models', {}).values()), {})
+    env = dict(os.environ,
+               ANTHROPIC_BASE_URL=options.get('baseURL', '').rstrip('/').removesuffix('/v1'),
+               ANTHROPIC_AUTH_TOKEN=options.get('apiKey', ''),
+               # every alias (opus, sonnet, haiku, background tasks) to this model
+               ANTHROPIC_MODEL=model.get('id', ''),
+               ANTHROPIC_DEFAULT_OPUS_MODEL=model.get('id', ''),
+               ANTHROPIC_DEFAULT_SONNET_MODEL=model.get('id', ''),
+               ANTHROPIC_DEFAULT_HAIKU_MODEL=model.get('id', ''),
+               # no Anthropic-only request fields, no telemetry to Anthropic
+               CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS='1',
+               CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC='1')
+    if model.get('limit', {}).get('output'):
+        env['CLAUDE_CODE_MAX_OUTPUT_TOKENS'] = str(model['limit']['output'])
+    env.pop('ANTHROPIC_API_KEY', None)
+    os.execvpe('claude', ['claude', *args], env)
+
+
+main()
