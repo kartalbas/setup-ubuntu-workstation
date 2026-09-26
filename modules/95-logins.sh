@@ -1,10 +1,10 @@
 # shellcheck shell=bash
 # modules/95-logins.sh — interactive sign-ins (J65): GitHub, Claude Code,
-# Codex, agy, Muse. Each is skipped when already signed in, can be declined,
-# and can be repeated any time with `sudo ./setup.sh login`.
+# Codex, agy, Muse, OpenCode's LLM servers. Each is skipped when already set
+# up, can be declined, and can be repeated any time with `./setup.sh login`.
 
 logins_run() {
-  [[ -t 0 && -t 1 ]] || die "The logins need an interactive terminal: sudo ./setup.sh login"
+  [[ -t 0 && -t 1 ]] || die "The logins need an interactive terminal: ./setup.sh login"
   log_step "Sign-ins"
   _login "GitHub (gh)" GH "gh auth status" \
     "gh auth login --hostname github.com --git-protocol https --web && gh auth setup-git"
@@ -15,6 +15,8 @@ logins_run() {
   # can report the signed-in state from a script, so they are always offered.
   _login "Antigravity CLI (agy) — sign in, then leave with /exit" AGY "false" "agy"
   _login "Muse Code" MUSE "false" "muse login"
+  _login "OpenCode — your own LLM servers" OPENCODE "test -s \"\$HOME/.config/opencode/opencode.json\"" \
+    "'$REPO_ROOT/setup.sh' opencode"
   return 0
 }
 
@@ -22,12 +24,13 @@ logins_run() {
 _login() {
   local label="$1" key="$2" check="$3" cmd="$4" answer env=()
   on "$key" || return 0
-  mapfile -t env < <(user_gui_env)
-  if sudo -u "$TARGET_USER" -H env "${env[@]}" bash -lc "$check" >/dev/null 2>&1; then
+  # As root (at the end of install): as the user, reaching the desktop session.
+  if (( EUID == 0 )); then mapfile -t env < <(user_gui_env); env=(sudo -u "$TARGET_USER" -H env "${env[@]}"); fi
+  if "${env[@]}" bash -lc "$check" >/dev/null 2>&1; then
     log_ok "$label: already signed in"; return 0
   fi
   read -rp "Sign in to $label now? [Y/n] " answer
   [[ "${answer:-Y}" =~ ^[Yy] ]] || { log_info "$label: skipped"; return 0; }
-  sudo -u "$TARGET_USER" -H env "${env[@]}" bash -lc "$cmd" \
-    || log_warn "$label: sign-in not completed — repeat with: sudo ./setup.sh login"
+  "${env[@]}" bash -lc "$cmd" \
+    || log_warn "$label: sign-in not completed — repeat with: ./setup.sh login"
 }

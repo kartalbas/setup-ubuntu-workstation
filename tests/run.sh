@@ -65,6 +65,10 @@ grep -q "profiles.sh 'PowerShell|pwsh -NoLogo|Ctrl+Shift+1' 'Bash|bash -l|Ctrl+S
 grep -q '^map ctrl+comma  *launch --type=tab nano /home/u/.config/kitty/local.conf$' "$tmp/kitty.conf" \
   && ok "Ctrl+, edits local.conf" || bad "Ctrl+, line: $(grep ctrl+comma "$tmp/kitty.conf")"
 python3 -m py_compile "$tmp/windows_terminal.py" && ok "kitty helper compiles" || bad "kitty helper does not compile"
+python3 -m py_compile tools/opencode-llms.py && python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); assert set(c["provider"]) == {"llm1", "llm2"}' templates/opencode.json \
+  && ok "OpenCode template (llm1, llm2) and helper are valid" || bad "OpenCode template or helper broken"
+grep -qiE 'https?://[a-z0-9-]+\.[a-z]|[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' <(grep -v 'opencode.ai/config.json' templates/opencode.json) \
+  && bad "OpenCode template has a real host" || ok "OpenCode template has placeholders only"
 ghostty_config
 eq "config.ghostty gets the shell" "$(grep -c '^command = pwsh -NoLogo$' "$tmp/config.ghostty")" "1"
 eq "config.ghostty loads local.conf" "$(grep -c '^config-file = ?local.conf$' "$tmp/config.ghostty")" "1"

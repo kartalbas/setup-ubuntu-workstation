@@ -18,6 +18,23 @@ ai_setup() {
   return 0
 }
 
+# opencode_llms — OpenCode with your own two LLM servers (llm1, llm2): asks
+# for each one's base URL and token, reads model and context size from the
+# server, writes ~/.config/opencode/opencode.json (0600). The values stay on
+# this machine; the repository has the template with placeholders only.
+opencode_llms() {
+  local n url token lines=""
+  for n in 1 2; do
+    read -rp "llm$n base URL (https://…/v1): " url
+    read -rsp "llm$n token: " token; echo
+    [[ -n "$url" && -n "$token" ]] || die "llm$n: URL and token are needed"
+    lines+="$url $token"$'\n'
+  done
+  printf '%s' "$lines" | python3 "$REPO_ROOT/tools/opencode-llms.py" \
+    "$REPO_ROOT/templates/opencode.json" "$TARGET_HOME/.config/opencode/opencode.json"
+  log_ok "OpenCode: llm1 and llm2 in ~/.config/opencode/opencode.json (only on this machine)"
+}
+
 # Ubuntu 24.04+ keeps unprivileged programs from creating user namespaces;
 # Claude Code's sandbox (bubblewrap) needs them. Profile from the Claude Code
 # docs (Sandboxing, "Ubuntu 24.04 and later").

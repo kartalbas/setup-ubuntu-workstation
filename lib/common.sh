@@ -38,20 +38,32 @@ run() {
 }
 
 # ---- the workstation user ----------------------------------------------------
-# setup.sh runs as root (sudo); per-user parts go to the account that called
-# sudo: TARGET_USER, its home TARGET_HOME.
-TARGET_USER="${SUDO_USER:-}"
-TARGET_HOME=""
+# Commands that change the system (install, update, config set) run as root
+# via sudo; their per-user parts go to the account that called sudo. Commands
+# for the account itself (login, doctor, opencode, config show) run as that
+# account, without sudo. TARGET_USER / TARGET_HOME: that account.
+TARGET_USER="" TARGET_HOME=""
 require_root_and_user() {
-  [[ $EUID -eq 0 ]] || die "Run with sudo: sudo ./setup.sh $*"
+  [[ $EUID -eq 0 ]] || die "This changes the system: sudo ./setup.sh $*"
+  TARGET_USER="${SUDO_USER:-}"
   [[ -n "$TARGET_USER" && "$TARGET_USER" != root ]] \
     || die "Run it via sudo from your own account (not as root), so per-user tools land in your home"
   TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
   [[ -d "$TARGET_HOME" ]] || die "Home of $TARGET_USER not found"
 }
-# as_user CMD... — run as the workstation user with its own HOME and PATH.
+require_user() {
+  [[ $EUID -ne 0 ]] || die "This is for your own account, run it without sudo: ./setup.sh $*"
+  TARGET_USER="$(id -un)" TARGET_HOME="$HOME"
+}
+USER_PATH_TAIL="/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+# as_user CMD... — run as the workstation user with its own HOME and PATH
+# (directly when setup.sh already runs as that user).
 as_user() {
-  run sudo -u "$TARGET_USER" -H env "TERM=${TERM:-dumb}" "PATH=$TARGET_HOME/.local/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" "$@"
+  if (( EUID == 0 )); then
+    run sudo -u "$TARGET_USER" -H env "TERM=${TERM:-dumb}" "PATH=$TARGET_HOME/.local/bin:$USER_PATH_TAIL" "$@"
+  else
+    run env "PATH=$TARGET_HOME/.local/bin:$USER_PATH_TAIL" "$@"
+  fi
 }
 # as_user_sh SCRIPT — a bash snippet as the workstation user (login-like env).
 as_user_sh() { as_user bash -c "$1"; }
@@ -284,7 +296,9 @@ dconf_defaults() {
 # user's session bus, or a private one when the user is not logged in.
 user_dconf() {
   local bus; bus="/run/user/$(id -u "$TARGET_USER")/bus"
-  if [[ -S "$bus" ]]; then
+  if (( EUID != 0 )); then
+    run dconf "$@"
+  elif [[ -S "$bus" ]]; then
     run sudo -u "$TARGET_USER" -H env "DBUS_SESSION_BUS_ADDRESS=unix:path=$bus" dconf "$@"
   else
     run sudo -u "$TARGET_USER" -H dbus-run-session -- dconf "$@"
@@ -293,7 +307,11 @@ user_dconf() {
 
 # user_out CMD... — run as the workstation user without logging (for reads).
 user_out() {
-  sudo -u "$TARGET_USER" -H env "TERM=${TERM:-dumb}" "PATH=$TARGET_HOME/.local/bin:/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin" "$@"
+  if (( EUID == 0 )); then
+    sudo -u "$TARGET_USER" -H env "TERM=${TERM:-dumb}" "PATH=$TARGET_HOME/.local/bin:$USER_PATH_TAIL" "$@"
+  else
+    env "PATH=$TARGET_HOME/.local/bin:$USER_PATH_TAIL" "$@"
+  fi
 }
 # user_gui_env — environment that lets a user command reach the user's
 # desktop session (browser windows for the logins).

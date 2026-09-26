@@ -14,13 +14,31 @@ sudo ./setup.sh install        # everything in the table below that is "on"
 
 At the end it asks, one by one, to sign in to GitHub (`gh`, which also becomes
 git's credential helper — no plain-text passwords), Claude Code, Codex, agy
-and Muse. Skip any of them and repeat later with `sudo ./setup.sh login`.
-`sudo ./setup.sh doctor` lists every enabled tool with its version.
+and Muse, and for your own LLM servers for OpenCode. Skip any of them and
+repeat later with `./setup.sh login`.
 
-Run it from your own account via sudo: system parts go to the system,
-per-user parts (nvm/Node, Python, Flutter, agy, Muse, terminal and shell
-settings) to your home. Re-running is safe and brings pinned tools to the
-versions in `versions.conf`.
+Only what changes the system needs sudo (`install`, `config set`); everything
+for your own account runs without it:
+
+| Command | |
+|---|---|
+| `sudo ./setup.sh install` | install and configure everything enabled; re-run it any time (e.g. after a git pull) |
+| `sudo ./setup.sh config set KEY 0\|1` | switch a tool on or off |
+| `./setup.sh login` | the sign-ins above |
+| `./setup.sh doctor` | every enabled tool with its version |
+| `./setup.sh opencode` | OpenCode with your own two LLM servers (below) |
+| `./setup.sh config show` | the current settings |
+
+Per-user parts (nvm/Node, Python, Flutter, agy, Muse, terminal and shell
+settings) go to your home, system parts to the system. Re-running is safe and
+brings pinned tools to the versions in `versions.conf`.
+
+**OpenCode with your own LLM servers** (OpenAI-compatible, e.g. llama-server):
+`./setup.sh opencode` asks for the base URL and token of `llm1` and `llm2`,
+reads model and context size from each server and writes
+`~/.config/opencode/opencode.json` (mode 0600). URLs and tokens stay on your
+machine; the repository only has the template with placeholders
+(`templates/opencode.json`).
 
 ## The terminals
 

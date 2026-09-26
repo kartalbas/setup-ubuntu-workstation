@@ -22,13 +22,15 @@ usage() {
 ${C_BOLD}setup-ubuntu-workstation${C_RST} — Ubuntu 26.04 developer workstation in one command
 
 ${C_BOLD}USAGE${C_RST}
-  sudo ./setup.sh COMMAND [--dry-run]
+  sudo ./setup.sh install | config set KEY VALUE     (change the system)
+  ./setup.sh login | doctor | opencode | config show (your account, no sudo)
 
 ${C_BOLD}COMMANDS${C_RST}
   install              Install and configure everything enabled in the config
                        (idempotent: re-run it any time, e.g. after a git pull)
-  login                Interactive logins: gh, Claude Code, Codex, agy, Muse
+  login                Sign-ins: gh, Claude Code, Codex, agy, Muse, OpenCode
   doctor               Check that every enabled tool is there, with versions
+  opencode             OpenCode with your own two LLM servers (URL + token)
   config show | set KEY VALUE
                        Show the config, or change one value (1 = on, 0 = off)
 USAGE
@@ -46,15 +48,19 @@ main() {
   set -- "${args[@]}"
   (( $# )) || { usage; exit 1; }
   local verb="$1"; shift
-  require_root_and_user "$verb"
+  case "$verb $*" in
+    install*|"config set"*) require_root_and_user "$verb" ;;   # they change the system
+    login*|doctor*|opencode*|"config show"*) require_user "$verb" ;;
+  esac
   cfg_load; ver_load
   case "$verb" in
-    install) install_all ;;
-    login)   logins_run ;;
-    doctor)  doctor ;;
+    install)  install_all ;;
+    login)    logins_run ;;
+    doctor)   doctor ;;
+    opencode) opencode_llms ;;
     config)
       case "${1:-}" in
-        show) cfg_init; grep -vE '^[[:space:]]*(#|$)' "$CONFIG_FILE" ;;
+        show) grep -vE '^[[:space:]]*(#|$)' "$([[ -f "$CONFIG_FILE" ]] && echo "$CONFIG_FILE" || echo "$REPO_ROOT/config.example.conf")" ;;
         set)  (( $# == 3 )) || die "config set KEY VALUE"; cfg_set "$2" "$3" ;;
         *) die "config: show | set KEY VALUE" ;;
       esac ;;
@@ -82,7 +88,7 @@ install_all() {
   log_ok "Installed. Log out and in once (new groups, fonts, default terminal)."
   if on LOGINS; then
     if [[ -t 0 && -t 1 ]]; then logins_run
-    else log_info "No terminal attached: run the logins later with: sudo ./setup.sh login"; fi
+    else log_info "No terminal attached: run the logins later with: ./setup.sh login"; fi
   fi
 }
 

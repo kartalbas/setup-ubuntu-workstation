@@ -1,0 +1,40 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "llm1": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "llm1",
+      "options": {
+        "baseURL": "https://LLM1-HOST/v1",
+        "apiKey": "LLM1-TOKEN"
+      },
+      "models": {
+        "LLM1-MODEL": {
+          "name": "LLM1-MODEL",
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        }
+      }
+    },
+    "llm2": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "llm2",
+      "options": {
+        "baseURL": "https://LLM2-HOST/v1",
+        "apiKey": "LLM2-TOKEN"
+      },
+      "models": {
+        "LLM2-MODEL": {
+          "name": "LLM2-MODEL",
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        }
+      }
+    }
+  },
+  "model": "llm1/LLM1-MODEL"
+}
