@@ -18,12 +18,22 @@ ENTRIES = [
     ('Antigravity IDE', 'antigravity-ide', lambda p: ['antigravity-ide', p], False),
 ]
 
+# Programs whose package brings its own "Open in" extension: while it is there,
+# the menu shows only that one, so the entry appears once.
+OWN_EXTENSIONS = {'ghostty': 'ghostty.py'}
+EXTENSIONS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def brings_own(program):
+    own = OWN_EXTENSIONS.get(program)
+    return bool(own) and os.path.exists(os.path.join(EXTENSIONS_DIR, own))
+
 
 class OpenIn(GObject.GObject, Nautilus.MenuProvider):
     def _items(self, path, is_dir, where):
         items = []
         for label, program, command, folders_only in ENTRIES:
-            if (folders_only and not is_dir) or not shutil.which(program):
+            if (folders_only and not is_dir) or not shutil.which(program) or brings_own(program):
                 continue
             item = Nautilus.MenuItem(name=f'SetupOpenIn::{program}::{where}', label=f'Open in {label}')
             item.connect('activate', self._run, command(path))
@@ -48,4 +58,5 @@ class OpenIn(GObject.GObject, Nautilus.MenuProvider):
 
 
 if __name__ == '__main__':
-    print(', '.join(label for label, program, _, _ in ENTRIES if shutil.which(program)) or 'no program installed')
+    print(', '.join(label + (' (its own extension)' if brings_own(program) else '')
+                    for label, program, _, _ in ENTRIES if shutil.which(program)) or 'no program installed')
