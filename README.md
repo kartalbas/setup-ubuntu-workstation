@@ -14,7 +14,10 @@ sudo ./setup.sh install        # everything in the table below that is "on"
 
 At the end it asks, one by one, to sign in to GitHub (`gh`, which also becomes
 git's credential helper — no plain-text passwords), Claude Code, Codex, agy
-and Muse, and for your own LLM servers for OpenCode. Skip any of them and
+and Muse, and for your own LLM servers for OpenCode. Muse 1.4 cannot keep its
+login in the keyring on Linux yet
+([muse-code-sdk#38](https://github.com/meta-models/muse-code-sdk/issues/38)), so
+its file store (`~/.config/muse/auth.json`, 0600) is set for it. Skip any of them and
 repeat later with `./setup.sh login`.
 
 Only what changes the system needs sudo (`install`, `config set`); everything

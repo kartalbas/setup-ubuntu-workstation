@@ -51,6 +51,10 @@ function l { & /usr/bin/ls --color=auto -CF @args }
 function grep { & /usr/bin/grep --color=auto @args }
 
 if (Get-Command zoxide -ErrorAction SilentlyContinue) { Invoke-Expression (& { (zoxide init powershell | Out-String) }) }
+# Muse 1.4 cannot store its login in the keyring on Linux yet
+# (github.com/meta-models/muse-code-sdk/issues/38): use its file store.
+if (Get-Command muse -ErrorAction SilentlyContinue) { $env:TBH_CREDENTIAL_BACKEND = 'file' }
+
 # Tab title: the name of the current directory, set at every prompt.
 function Set-TabTitle {
     $Host.UI.RawUI.WindowTitle = if ($PWD.ProviderPath -eq '/') { '/' } else { Split-Path -Leaf $PWD.ProviderPath }

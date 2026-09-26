@@ -35,6 +35,9 @@ bash_block() {
     on RUST && echo '[ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"'
     on KREW && echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"'
     on ZOXIDE && echo 'command -v zoxide >/dev/null && eval "$(zoxide init bash)"'
+    # Muse 1.4 cannot store its login in the keyring on Linux yet
+    # (github.com/meta-models/muse-code-sdk/issues/38): use its file store.
+    on MUSE && echo 'export TBH_CREDENTIAL_BACKEND=file'
     # Tab title: the name of the current directory, set at every prompt.
     printf '%s\n' '__tab_title() { local d="${PWD##*/}"; printf "\e]0;%s\a" "${d:-/}"; }'
     if on STARSHIP; then

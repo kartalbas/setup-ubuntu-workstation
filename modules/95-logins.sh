@@ -14,7 +14,7 @@ logins_run() {
   # URL + code over SSH); leave it with /exit afterwards. Neither agy nor muse
   # can report the signed-in state from a script, so they are always offered.
   _login "Antigravity CLI (agy) — sign in, then leave with /exit" AGY "false" "agy"
-  _login "Muse Code" MUSE "false" "muse login"
+  _login "Muse Code" MUSE "test -s \"\$HOME/.config/muse/auth.json\"" "TBH_CREDENTIAL_BACKEND=file muse login"
   _login "OpenCode — your own LLM servers" OPENCODE "test -s \"\$HOME/.config/opencode/opencode.json\"" \
     "'$REPO_ROOT/setup.sh' opencode"
   return 0
