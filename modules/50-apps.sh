@@ -71,7 +71,7 @@ antigravity_hub_install() {
   [[ "$DRY_RUN" == 1 ]] && return 0
   chown root:root "$dir/chrome-sandbox"; chmod 4755 "$dir/chrome-sandbox"
   python3 "$REPO_ROOT/tools/asar-file.py" "$dir/resources/app.asar" icon.png \
-    | atomic_write /usr/local/share/icons/hicolor/256x256/apps/antigravity-hub.png 0644
+    | atomic_write /usr/local/share/icons/hicolor/512x512/apps/antigravity-hub.png 0644
   render antigravity-hub.desktop | atomic_write /usr/local/share/applications/antigravity-hub.desktop 0644
   if (( CHANGED )); then run update-desktop-database -q /usr/local/share/applications; fi
   return 0
