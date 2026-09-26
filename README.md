@@ -26,6 +26,7 @@ for your own account runs without it:
 | Command | |
 |---|---|
 | `sudo ./setup.sh install` | install and configure everything enabled; re-run it any time (e.g. after a git pull) |
+| `sudo ./setup.sh update` | every tool with its installed and newest version; update all that is newer (Enter) or pick numbers (`2 5-7`); `--list` only shows, `--all` asks nothing |
 | `sudo ./setup.sh config set KEY 0\|1` | switch a tool on or off |
 | `./setup.sh login` | the sign-ins above |
 | `./setup.sh doctor` | every enabled tool with its version |

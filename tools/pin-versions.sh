@@ -4,11 +4,16 @@
 #
 #   tools/pin-versions.sh > versions.conf.new && diff versions.conf versions.conf.new
 #
-# then review, move it over versions.conf, test, commit. Needs curl, jq-free
+# then review, move it over versions.conf, test, commit. `setup.sh update` runs
+# it too, to show what is newer. Needs curl, jq-free
 # python3 and an authenticated `gh` (GitHub API rate limits).
 set -euo pipefail
 
 say() { printf '%s\n' "$*"; }
+# GitHub API: through gh when it is signed in (5000 requests an hour), else
+# anonymously (60 an hour, enough for one run).
+if gh auth status >/dev/null 2>&1; then api() { gh api "$1"; }
+else api() { curl -fsSL -H 'Accept: application/vnd.github+json' "https://api.github.com/$1"; }; fi
 err() { printf 'pin: %s\n' "$*" >&2; }
 
 # GitHub release asset: KEY REPO ASSET_REGEX [TAG]
@@ -27,8 +32,8 @@ print(rel["tag_name"], a["browser_download_url"], d.split(":", 1)[1] if d.starts
 '
 gh_asset() {
   local key="$1" repo="$2" regex="$3" tag="${4:-}" json line
-  if [[ -n "$tag" ]]; then json="$(gh api "repos/$repo/releases/tags/$tag")"
-  else json="$(gh api "repos/$repo/releases/latest")"; fi
+  if [[ -n "$tag" ]]; then json="$(api "repos/$repo/releases/tags/$tag")"
+  else json="$(api "repos/$repo/releases/latest")"; fi
   line="$(python3 -c "$PICK_ASSET" "$regex" <<<"$json" 2>&1)" || { err "$key: $line"; exit 1; }
   read -r tag url sha <<<"$line"
   if [[ -z "$sha" ]]; then   # old assets carry no digest: hash the download
@@ -101,7 +106,7 @@ gh_asset FZF junegunn/fzf '^fzf-[0-9.]+-linux_amd64\.tar\.gz$'
 gh_asset BAT sharkdp/bat '^bat_[0-9.]+_amd64\.deb$'
 
 say "# ---- F. Languages"
-nvm_tag="$(gh api repos/nvm-sh/nvm/releases/latest --jq .tag_name)"
+nvm_tag="$(api repos/nvm-sh/nvm/releases/latest | python3 -c 'import json,sys; print(json.load(sys.stdin)["tag_name"])')"
 url_pin NVM "${nvm_tag#v}" "https://raw.githubusercontent.com/nvm-sh/nvm/$nvm_tag/install.sh"
 gh_asset UV astral-sh/uv '^uv-x86_64-unknown-linux-gnu\.tar\.gz$'
 read -r go_ver go_sha < <(curl -fsSL 'https://go.dev/dl/?mode=json' | python3 -c '

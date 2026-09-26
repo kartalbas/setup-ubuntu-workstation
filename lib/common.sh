@@ -137,7 +137,25 @@ cfg_set() {
     { cat "$CONFIG_FILE"; echo "$line"; } | atomic_write "$CONFIG_FILE" 0644
   fi
 }
-ver_load() { VER=(); _parse_kv_file "$REPO_ROOT/versions.conf" VER; }
+# versions.local.conf (next to the config, written by `update`): newer versions
+# chosen on this machine. They count as long as they are newer than the
+# repository's; once versions.conf has caught up, its own apply again.
+VERSIONS_LOCAL="${VERSIONS_LOCAL:-/etc/setup-ubuntu-workstation/versions.local.conf}"
+ver_load() {
+  VER=(); _parse_kv_file "$REPO_ROOT/versions.conf" VER
+  [[ -f "$VERSIONS_LOCAL" ]] || return 0
+  local -A loc=(); local k p s
+  _parse_kv_file "$VERSIONS_LOCAL" loc
+  for k in "${!loc[@]}"; do
+    [[ "$k" =~ ^(.+)_(VERSION|MINOR)$ ]] || continue
+    p="${BASH_REMATCH[1]}"
+    dpkg --compare-versions "${loc[$k]}" gt "${VER[$k]:-0}" 2>/dev/null || continue
+    for s in VERSION MINOR URL SHA256 SHA512; do
+      [[ -n "${loc[${p}_$s]:-}" ]] && VER[${p}_$s]="${loc[${p}_$s]}"
+    done
+  done
+  return 0
+}
 ver() { [[ -n "${VER[$1]:-}" ]] || die "versions.conf has no $1"; printf '%s' "${VER[$1]}"; }
 
 # ---- files -------------------------------------------------------------------

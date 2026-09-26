@@ -22,12 +22,15 @@ usage() {
 ${C_BOLD}setup-ubuntu-workstation${C_RST} — Ubuntu 26.04 developer workstation in one command
 
 ${C_BOLD}USAGE${C_RST}
-  sudo ./setup.sh install | config set KEY VALUE     (change the system)
+  sudo ./setup.sh install | update | config set KEY VALUE   (change the system)
   ./setup.sh login | doctor | opencode | config show (your account, no sudo)
 
 ${C_BOLD}COMMANDS${C_RST}
   install              Install and configure everything enabled in the config
                        (idempotent: re-run it any time, e.g. after a git pull)
+  update [--all|--list]
+                       Show every tool with its installed and newest version;
+                       update all that is newer (Enter) or a selection
   login                Sign-ins: gh, Claude Code, Codex, agy, Muse, OpenCode
   doctor               Check that every enabled tool is there, with versions
   opencode             OpenCode with your own two LLM servers (URL + token)
@@ -49,12 +52,13 @@ main() {
   (( $# )) || { usage; exit 1; }
   local verb="$1"; shift
   case "$verb $*" in
-    install*|"config set"*) require_root_and_user "$verb" ;;   # they change the system
+    install*|update*|"config set"*) require_root_and_user "$verb" ;;   # they change the system
     login*|doctor*|opencode*|"config show"*) require_user "$verb" ;;
   esac
   cfg_load; ver_load
   case "$verb" in
     install)  install_all ;;
+    update)   update_run "$@" ;;
     login)    logins_run ;;
     doctor)   doctor ;;
     opencode) opencode_llms ;;

@@ -81,6 +81,12 @@ CFG[STARSHIP]=0; bash_block
 bash -n "$tmp/.bashrc" && ok "bash block (no starship) is valid bash" || bad "bash block (no starship) has a syntax error"
 # shellcheck disable=SC2016  # PS1 as Ubuntu's ~/.bashrc leaves it, before our block
 eq "Ubuntu's user@host title is dropped" "$(bash -c 'PS1="\[\e]0;\u@\h: \w\a\]\u@\h:\w\$ "; eval "$(grep "^PS1=" "$1")"; printf %s "$PS1"' _ "$tmp/.bashrc")" '\u@\h:\w$ '
+miss=""
+while read -r p; do [[ -n "${PIN_APPLY[$p]:-}" ]] || miss+=" $p"; done < <(grep -oE '^[A-Z0-9_]+_(VERSION|MINOR)=' versions.conf | sed -E 's/_(VERSION|MINOR)=//')
+eq "update knows how to apply every pinned tool" "${miss:-none}" "none"
+printf 'KITTY_VERSION="999.0"\nKITTY_URL="u"\nKITTY_SHA256="s"\nPWSH_VERSION="0.1"\n' >"$tmp/vl.conf"
+( VERSIONS_LOCAL="$tmp/vl.conf"; ver_load; printf '%s %s' "$(ver KITTY_VERSION)" "$(ver PWSH_VERSION)" ) >"$tmp/vl.out"
+eq "versions.local.conf: newer wins, older is ignored" "$(cut -d' ' -f1 "$tmp/vl.out") $(grep -c '^PWSH_VERSION="0.1"' versions.conf)" "999.0 0"
 X="a&b"; mkdir -p "$tmp/templates"; printf '@X@' >"$tmp/templates/t"
 eq "render keeps & literal" "$(REPO_ROOT="$tmp" render t)" "a&b"
 ( unset KITTY_SHELL; render kitty.conf ) >/dev/null 2>&1 && bad "missing value accepted" || ok "render fails on a missing value"
