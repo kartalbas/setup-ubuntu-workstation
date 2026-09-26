@@ -77,8 +77,11 @@ bar cursor, 120×30, scrollbar, selecting does not copy. Not in kitty: mark mode
 window runs through XWayland, so GNOME draws its title bar: move, resize, snap
 and maximise like any other window.
 
-The pwsh profile adds Windows editing keys, history suggestions as a list, the
-starship prompt and Ubuntu's `ll`, `la`, `l`. AI agents (Claude Code, Codex,
+The pwsh profile adds Windows editing keys, history suggestions as a list, a
+prompt with the git state (`PS <path> [⑂ branch ↑1 M:2 untracked:1]>`, fetches
+in the background every 10 minutes), `ll`, `la`, `l`, `which`, `gs`/`ga`/`gc`
+for git status/add/commit, and `vim`, `cat`, `grep`, `find` as nvim, bat, rg,
+fd. bash gets the starship prompt. AI agents (Claude Code, Codex,
 …) run their commands in bash whatever the terminal's shell is. The managed
 files load one of your own that is never overwritten (`local.conf`,
 `profile.local.ps1`).
