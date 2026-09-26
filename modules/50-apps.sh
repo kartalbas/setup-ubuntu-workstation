@@ -102,7 +102,8 @@ nemo_accels() {
   tmp="$(mktemp)"; [[ -f "$file" ]] && cat "$file" >"$tmp"
   for entry in "${NEMO_ACCELS[@]}"; do
     path="${entry%%|*}" key="${entry#*|}"
-    grep -vF "\"$path\"" "$tmp" >"$tmp.new"; mv "$tmp.new" "$tmp"
+    grep -vF "\"$path\"" "$tmp" >"$tmp.new" || true   # nothing left is fine
+    mv "$tmp.new" "$tmp"
     printf '(gtk_accel_path "%s" "%s")\n' "$path" "$key" >>"$tmp"
   done
   user_file "$file" <"$tmp"; rm -f "$tmp"
