@@ -70,7 +70,8 @@ configs_run() { # [save]
         if [[ "$src" == *.sops.* ]]; then
           # Only re-encrypt when the content changed (every encryption differs).
           if [[ -f "$f" ]] && sops -d "$f" 2>/dev/null | cmp -s - "$dst"; then continue; fi
-          sops -e --filename-override "$f" "$dst" >"$plain" || die "Cannot encrypt $src — see $dir/.sops.yaml and bin/secrets"
+          sops --config "$dir/.sops.yaml" -e --filename-override "$f" "$dst" >"$plain" \
+            || die "Cannot encrypt $src — see $dir/.sops.yaml and bin/secrets"
           cp "$plain" "$f"
         else
           cmp -s "$dst" "$f" || cp "$dst" "$f"
