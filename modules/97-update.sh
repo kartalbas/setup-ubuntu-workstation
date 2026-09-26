@@ -9,7 +9,7 @@ declare -gA PIN_KEY=(
   [NERDFONT_CASCADIACODE]=NERD_FONTS [NERDFONT_CASCADIAMONO]=NERD_FONTS
   [NERDFONT_FIRACODE]=NERD_FONTS [NERDFONT_JETBRAINSMONO]=NERD_FONTS
   [NVM]=NODE [UV]=PYTHON [ANDROID_CMDLINE_TOOLS]=FLUTTER [RUSTUP]=RUST
-  [KUBENS]=KUBECTX [ARGO_ROLLOUTS]=ARGO
+  [KUBENS]=KUBECTX [ARGO_ROLLOUTS]=ARGO [SOPS]=SECRETS [AGE]=SECRETS
 )
 # How a pinned tool gets its version (the same calls install makes).
 declare -gA PIN_APPLY=(
@@ -34,6 +34,7 @@ declare -gA PIN_APPLY=(
   [KREW]="krew_setup" [CMCTL]="bin_install CMCTL cmctl" [ARGOCD]="bin_install ARGOCD argocd"
   [TKN]="deb_install TKN tektoncd-cli" [ARGO]="bin_install ARGO argo"
   [ARGO_ROLLOUTS]="bin_install ARGO_ROLLOUTS kubectl-argo-rollouts" [MKCERT]="bin_install MKCERT mkcert"
+  [SOPS]="deb_install SOPS sops" [AGE]="bin_install AGE age age; bin_install AGE age-keygen age-keygen"
 )
 # Packages from apt repositories, per config key.
 APT_TOOLS=(

@@ -44,6 +44,7 @@ doctor() {
   _tool GIT_LFS "git-lfs" git lfs version
   _tool LAZYGIT "lazygit" "lazygit --version | cut -c1-80"
   _tool DELTA "delta" delta --version
+  _tool SECRETS "sops + age" "echo sops \$(sops --version 2>/dev/null | head -1 | cut -d' ' -f2) · age \$(age --version)"
   _tool JQ "jq" jq --version
   _tool YQ "yq" yq --version
   _tool RIPGREP "ripgrep" "rg --version | head -1"

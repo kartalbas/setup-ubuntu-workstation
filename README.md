@@ -193,6 +193,7 @@ again. Nothing is removed when switched off.
 | **J** | **Setup** | | |
 | 64 | git identity (`GIT_USER_NAME`/`EMAIL` or asked) | | ✓ |
 | 65 | sign-ins: gh (+ git credentials), Claude Code, Codex, agy, Muse | | ✓ |
+| 71 | sops + age: encrypted settings in your own config repository | GitHub, pinned | ✓ |
 
 ## Maintenance
 

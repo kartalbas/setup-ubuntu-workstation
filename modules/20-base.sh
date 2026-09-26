@@ -29,6 +29,11 @@ base_setup() {
   on FZF && bin_install FZF fzf
   on BAT && deb_install BAT bat
   on NERD_FONTS && nerd_fonts_install
+  if on SECRETS; then   # settings kept encrypted in your own config repository
+    deb_install SOPS sops
+    bin_install AGE age age
+    bin_install AGE age-keygen age-keygen
+  fi
   return 0
 }
 
