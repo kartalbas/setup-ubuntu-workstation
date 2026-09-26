@@ -1,13 +1,13 @@
 # Managed by setup-ubuntu-workstation: "Open in ..." entries in the Files app
 # (Nautilus) for the terminals and editors that are installed — on a folder,
 # on the empty space of a folder, and (editors) on a single file.
+# Run directly, it lists the entries the Files app shows (setup.sh doctor).
 import os
 import shutil
-import subprocess
 
 from gi import require_version
 require_version('Nautilus', '4.0')
-from gi.repository import GObject, Nautilus  # noqa: E402
+from gi.repository import GLib, GObject, Nautilus  # noqa: E402
 
 # label, program, command for a path, folders only
 ENTRIES = [
@@ -31,8 +31,10 @@ class OpenIn(GObject.GObject, Nautilus.MenuProvider):
         return items
 
     def _run(self, _item, argv):
-        subprocess.Popen(argv, cwd=os.path.expanduser('~'), start_new_session=True,
-                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # GLib reaps the program itself, so the Files app keeps no zombie
+        GLib.spawn_async(argv, working_directory=os.path.expanduser('~'),
+                         flags=GLib.SpawnFlags.SEARCH_PATH | GLib.SpawnFlags.STDOUT_TO_DEV_NULL
+                         | GLib.SpawnFlags.STDERR_TO_DEV_NULL)
 
     def get_file_items(self, files):
         if len(files) != 1 or files[0].get_uri_scheme() != 'file':
@@ -43,3 +45,7 @@ class OpenIn(GObject.GObject, Nautilus.MenuProvider):
         if folder.get_uri_scheme() != 'file':
             return []
         return self._items(folder.get_location().get_path(), True, 'background')
+
+
+if __name__ == '__main__':
+    print(', '.join(label for label, program, _, _ in ENTRIES if shutil.which(program)) or 'no program installed')
