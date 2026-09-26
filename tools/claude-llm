@@ -45,6 +45,9 @@ def main():
                CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC='1')
     if model.get('limit', {}).get('output'):
         env['CLAUDE_CODE_MAX_OUTPUT_TOKENS'] = str(model['limit']['output'])
+    # Claude Code does not know the model, so it would assume a 200k window
+    if model.get('limit', {}).get('context'):
+        env['CLAUDE_CODE_MAX_CONTEXT_TOKENS'] = str(model['limit']['context'])
     env.pop('ANTHROPIC_API_KEY', None)
     os.execvpe('claude', ['claude', *args], env)
 
