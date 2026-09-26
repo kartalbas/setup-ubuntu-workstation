@@ -1,19 +1,19 @@
 # shellcheck shell=bash
 # modules/92-configs.sh — your own settings from your own (private) config
 # repository: CONFIGS_REPO=OWNER/NAME, cloned to ~/repos/<owner>/<name>, folder
-# setup-ubuntu-workstation/ in it. Files named *.sops.* there are encrypted
-# (sops + age) and decrypted on the way; hosts/<hostname>/ holds a machine's
-# own copy of a file. config.conf becomes this machine's config with the next
-# `sudo ./setup.sh install`.
+# setup-ubuntu-workstation/ in it; hosts/<hostname>/ holds a machine's own
+# copy of a file. The files are kept as they are, tokens included, so the
+# repository must be private. config.conf becomes this machine's config with
+# the next `sudo ./setup.sh install`.
 #   ./setup.sh configs         pull the repository, put your files in place
-#   ./setup.sh configs save    copy your files back, encrypt, commit, push
+#   ./setup.sh configs save    copy your files back, commit, push
 
-# path in the repository | path in your home
+# path in the repository | path in your home | mode
 CONFIGS_FILES=(
-  "kitty/local.conf|.config/kitty/local.conf"
-  "ghostty/local.conf|.config/ghostty/local.conf"
-  "powershell/profile.local.ps1|.config/powershell/profile.local.ps1"
-  "opencode/opencode.sops.json|.config/opencode/opencode.json"
+  "kitty/local.conf|.config/kitty/local.conf|0644"
+  "ghostty/local.conf|.config/ghostty/local.conf|0644"
+  "powershell/profile.local.ps1|.config/powershell/profile.local.ps1|0644"
+  "opencode/opencode.json|.config/opencode/opencode.json|0600"
 )
 
 # configs_dir — where the config repository is (or would be) cloned.
@@ -28,14 +28,6 @@ configs_source() {
   if [[ -f "$sub/hosts/$host/$2" ]]; then printf '%s' "$sub/hosts/$host/$2"; else printf '%s' "$sub/$2"; fi
 }
 
-# same_content A B — the same file; JSON counts as the same when its content
-# is (sops writes it with other indentation).
-same_content() {
-  cmp -s "$1" "$2" && return 0
-  python3 -c 'import json, sys; sys.exit(0 if json.load(open(sys.argv[1])) == json.load(open(sys.argv[2])) else 1)' \
-    "$1" "$2" 2>/dev/null
-}
-
 # configs_system — as root, during install: the repository's config.conf
 # becomes this machine's.
 configs_system() {
@@ -47,43 +39,29 @@ configs_system() {
 }
 
 configs_run() { # [save]
-  local mode="${1:-apply}" repo dir entry src dst f plain host
+  local mode="${1:-apply}" repo dir entry src dst perm f host
   repo="$(cfg_get CONFIGS_REPO)"
   [[ "$repo" == */* ]] || die "No config repository set: sudo ./setup.sh config set CONFIGS_REPO OWNER/NAME"
   dir="$(configs_dir)" host="$(hostname -s)"
   log_step "Your settings: $repo"
   if [[ ! -d "$dir/.git" ]]; then run git clone -q "https://github.com/$repo.git" "$dir" || die "Could not clone $repo (signed in to GitHub? ./setup.sh login)"; fi
-  plain="$(mktemp)"; chmod 0600 "$plain"
   case "$mode" in
     apply)
       git -C "$dir" pull -q --ff-only 2>/dev/null || log_warn "$repo not updated (offline or local changes) — using it as it is"
       for entry in "${CONFIGS_FILES[@]}"; do
-        src="${entry%%|*}" dst="$TARGET_HOME/${entry#*|}"
+        IFS='|' read -r src dst perm <<<"$entry"
         f="$(configs_source "$dir" "$src")"; [[ -f "$f" ]] || continue
-        mkdir -p "$(dirname "$dst")"
-        if [[ "$src" == *.sops.* ]]; then
-          sops -d "$f" >"$plain" 2>/dev/null || die "Cannot decrypt $src — is the key here? $dir/bin/secrets unlock"
-          same_content "$plain" "$dst" || install -m 0600 "$plain" "$dst"
-        else
-          cmp -s "$f" "$dst" || install -m 0644 "$f" "$dst"
-        fi
-        log_ok "~/${entry#*|}"
+        mkdir -p "$(dirname "$TARGET_HOME/$dst")"
+        cmp -s "$f" "$TARGET_HOME/$dst" || install -m "$perm" "$f" "$TARGET_HOME/$dst"
+        log_ok "~/$dst"
       done
       log_info "config.conf is used by the next: sudo ./setup.sh install" ;;
     save)
-      for entry in "${CONFIGS_FILES[@]}" "config.conf|$CONFIG_FILE"; do
-        src="${entry%%|*}" dst="${entry#*|}"; [[ "$dst" == /* ]] || dst="$TARGET_HOME/$dst"
+      for entry in "${CONFIGS_FILES[@]}" "config.conf|$CONFIG_FILE|0644"; do
+        IFS='|' read -r src dst perm <<<"$entry"; [[ "$dst" == /* ]] || dst="$TARGET_HOME/$dst"
         [[ -f "$dst" ]] || continue
         f="$(configs_source "$dir" "$src")"; mkdir -p "$(dirname "$f")"
-        if [[ "$src" == *.sops.* ]]; then
-          # Only re-encrypt when the content changed (every encryption differs).
-          if [[ -f "$f" ]] && sops -d "$f" >"$plain" 2>/dev/null && same_content "$plain" "$dst"; then continue; fi
-          sops --config "$dir/.sops.yaml" -e --filename-override "$f" "$dst" >"$plain" \
-            || die "Cannot encrypt $src — see $dir/.sops.yaml and bin/secrets"
-          cp "$plain" "$f"
-        else
-          cmp -s "$dst" "$f" || cp "$dst" "$f"
-        fi
+        cmp -s "$dst" "$f" || install -m "$perm" "$dst" "$f"
       done
       git -C "$dir" add -A
       if git -C "$dir" diff --cached --quiet; then log_ok "Nothing changed"
@@ -94,5 +72,4 @@ configs_run() { # [save]
       fi ;;
     *) die "configs [save]" ;;
   esac
-  rm -f "$plain"
 }

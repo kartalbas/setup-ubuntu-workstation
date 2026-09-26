@@ -113,15 +113,12 @@ folder `setup-ubuntu-workstation/` holds:
 | `config.conf` | `/etc/setup-ubuntu-workstation/config.conf` (with the next `sudo ./setup.sh install`) |
 | `kitty/local.conf`, `ghostty/local.conf` | `~/.config/kitty/`, `~/.config/ghostty/` |
 | `powershell/profile.local.ps1` | `~/.config/powershell/` |
-| `opencode/opencode.sops.json` (encrypted) | `~/.config/opencode/opencode.json` (0600) |
+| `opencode/opencode.json` (URLs and tokens of your LLM servers) | `~/.config/opencode/opencode.json` (0600) |
 | `hosts/<hostname>/…` | the same files, for that machine only |
 
 `./setup.sh configs` pulls the repository and puts the files in place;
-`./setup.sh configs save` copies yours back, encrypts the `*.sops.*` ones
-(sops + age, rules in the repository's `.sops.yaml`), commits and pushes.
-The age key lives in `~/.config/sops/age/keys.txt`; how it gets onto a new
-machine is up to the config repository (e.g. a copy locked with your
-passphrase).
+`./setup.sh configs save` copies yours back, commits and pushes. The files
+are kept as they are, tokens included — keep the repository private.
 
 ## Where your settings live
 
@@ -216,7 +213,6 @@ again. Nothing is removed when switched off.
 | **J** | **Setup** | | |
 | 64 | git identity (`GIT_USER_NAME`/`EMAIL` or asked) | | ✓ |
 | 65 | sign-ins: gh (+ git credentials), Claude Code, Codex, agy, Muse | | ✓ |
-| 71 | sops + age: encrypted settings in your own config repository | GitHub, pinned | ✓ |
 
 ## Maintenance
 

@@ -29,11 +29,30 @@ base_setup() {
   on FZF && bin_install FZF fzf
   on BAT && deb_install BAT bat
   on NERD_FONTS && nerd_fonts_install
-  if on SECRETS; then   # settings kept encrypted in your own config repository
-    deb_install SOPS sops
-    bin_install AGE age age
-    bin_install AGE age-keygen age-keygen
+  retired_tools_cleanup
+  return 0
+}
+
+# retired_tools_cleanup — sops and age, which earlier versions installed for
+# encrypted settings, are removed again where this script's own traces (its
+# version stamp, its download) show that it installed them.
+retired_tools_cleanup() {
+  local name stamp f
+  for name in age age-keygen; do
+    stamp="/usr/local/share/setup-ubuntu-workstation/$name.version"
+    [[ -f "$stamp" ]] || continue
+    run rm -f "/usr/local/bin/$name" "$stamp"
+    log_ok "Removed $name: no longer part of setup-ubuntu-workstation"
+  done
+  if compgen -G "$CACHE_DIR/sops-*.deb" >/dev/null; then
+    if [[ -n "$(installed_version sops)" ]]; then
+      DEBIAN_FRONTEND=noninteractive run apt-get purge -y -q sops
+      log_ok "Removed sops: no longer part of setup-ubuntu-workstation"
+    fi
   fi
+  for f in "$CACHE_DIR"/sops-*.deb "$CACHE_DIR"/age-*.tar.gz; do
+    [[ -e "$f" ]] && run rm -f "$f"
+  done
   return 0
 }
 
