@@ -8,6 +8,7 @@ logins_run() {
   log_step "Sign-ins"
   _login "GitHub (gh)" GH "gh auth status" \
     "gh auth login --hostname github.com --git-protocol https --web && gh auth setup-git"
+  git_identity ask
   _login "Claude Code" CLAUDE_CODE "claude auth status" "claude auth login"
   _login "OpenAI Codex" CODEX "codex login status" "codex login"
   # agy has no login subcommand: it signs in on its first start (browser, or a
