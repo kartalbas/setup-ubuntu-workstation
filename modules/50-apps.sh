@@ -110,10 +110,10 @@ nemo_accels() {
 
 # nemo_dock — Nemo instead of the Files app in the dock's favourites.
 nemo_dock() {
-  local favs
+  local favs from="'org.gnome.Nautilus.desktop'" to="'nemo.desktop'"
   favs="$(as_user gsettings get org.gnome.shell favorite-apps 2>/dev/null)" || return 0
-  [[ "$favs" == *"'org.gnome.Nautilus.desktop'"* && "$favs" != *"'nemo.desktop'"* ]] || return 0
-  user_dconf write /org/gnome/shell/favorite-apps "$(sed "s/'org.gnome.Nautilus.desktop'/'nemo.desktop'/" <<<"$favs")"
+  [[ "$favs" == *"$from"* && "$favs" != *"$to"* ]] || return 0
+  user_dconf write /org/gnome/shell/favorite-apps "${favs//"$from"/"$to"}"
 }
 
 # antigravity_ide_install — Antigravity IDE 2.x: Google ships it for Linux as a
