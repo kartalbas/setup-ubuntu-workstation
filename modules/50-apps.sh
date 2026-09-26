@@ -29,6 +29,7 @@ apps_setup() {
   on JETBRAINS_TOOLBOX && jetbrains_toolbox_install
   on BCOMPARE && deb_install BCOMPARE bcompare
   on FILES_OPEN_IN && files_open_in
+  on NEMO && nemo_setup
   return 0
 }
 
@@ -40,6 +41,79 @@ files_open_in() {
   render nautilus-open-in.py | atomic_write /usr/share/nautilus-python/extensions/setup-ubuntu-workstation-open-in.py 0644
   if (( CHANGED )); then log_info "Files app: the new entries appear once it restarts (close its windows, or log out and in)"; fi
   return 0
+}
+
+# nemo_setup — Nemo as the file manager, like Windows Explorer: the folder tree
+# on the left, the details list on the right (templates/dconf-nemo), Ctrl+Tab
+# between tabs, "Open in …" on right-click, folders open in it and it takes
+# the Files app's place in the dock. Nautilus stays: GNOME uses it for the
+# desktop icons and file dialogs.
+nemo_setup() {
+  apt_install nemo
+  render dconf-nemo | dconf_defaults 62-setup-ubuntu-workstation-nemo
+  nemo_open_in
+  nemo_accels
+  as_user xdg-mime default nemo.desktop inode/directory
+  nemo_dock
+  return 0
+}
+
+# "Open in …" as Nemo actions: label | program | command (%F = the folder or
+# file, quoted by Nemo) | also on a single file (editors)
+NEMO_OPEN_IN=(
+  "kitty|kitty|kitty --directory %F|0"
+  "Ghostty|ghostty|ghostty --gtk-single-instance=false --working-directory=%F|0"
+  "Terminal (Ptyxis)|ptyxis|ptyxis --new-window --working-directory=%F|0"
+  "VS Code|code|code %F|1"
+  "Antigravity IDE|antigravity-ide|antigravity-ide %F|1"
+)
+NEMO_ACTIONS=/usr/share/nemo/actions
+nemo_open_in() {
+  local entry label program command files kind sel ext exec want=" " f
+  for entry in "${NEMO_OPEN_IN[@]}"; do
+    IFS='|' read -r label program command files <<<"$entry"
+    for kind in folder background file; do
+      case "$kind" in
+        folder)     sel=s; ext='dir;'; exec="$command" ;;
+        background) sel=none; ext='any;'; exec="${command//%F/%P}" ;;
+        file)       [[ "$files" == 1 ]] || continue; sel=s; ext='nodirs;'; exec="$command" ;;
+      esac
+      f="$NEMO_ACTIONS/setup-ubuntu-workstation-$program-$kind.nemo_action"; want+="$f "
+      printf '[Nemo Action]\n# %s\nName=Open in %s\nComment=Open it in %s\nExec=%s\nQuote=double\nSelection=%s\nExtensions=%s\nDependencies=%s;\n' \
+        "$MANAGED_MARK" "$label" "$label" "$exec" "$sel" "$ext" "$program" | atomic_write "$f" 0644
+    done
+  done
+  for f in "$NEMO_ACTIONS"/setup-ubuntu-workstation-*.nemo_action; do
+    [[ -e "$f" && "$want" != *" $f "* ]] && run rm -f "$f"
+  done
+  return 0
+}
+
+# Explorer's keys where Nemo's differ and can be changed: Ctrl+Tab and
+# Ctrl+Shift+Tab switch tabs. (Backspace goes up and F3 opens the extra pane:
+# both are fixed in Nemo; Alt+Left goes back, Ctrl+F searches.)
+NEMO_ACCELS=(
+  "<Actions>/ShellActions/TabsNext|<Primary>Tab"
+  "<Actions>/ShellActions/TabsPrevious|<Primary><Shift>Tab"
+)
+nemo_accels() {
+  local file="$TARGET_HOME/.gnome2/accels/nemo" entry path key tmp
+  as_user mkdir -p "$(dirname "$file")"
+  tmp="$(mktemp)"; [[ -f "$file" ]] && cat "$file" >"$tmp"
+  for entry in "${NEMO_ACCELS[@]}"; do
+    path="${entry%%|*}" key="${entry#*|}"
+    grep -vF "\"$path\"" "$tmp" >"$tmp.new"; mv "$tmp.new" "$tmp"
+    printf '(gtk_accel_path "%s" "%s")\n' "$path" "$key" >>"$tmp"
+  done
+  user_file "$file" <"$tmp"; rm -f "$tmp"
+}
+
+# nemo_dock — Nemo instead of the Files app in the dock's favourites.
+nemo_dock() {
+  local favs
+  favs="$(as_user gsettings get org.gnome.shell favorite-apps 2>/dev/null)" || return 0
+  [[ "$favs" == *"'org.gnome.Nautilus.desktop'"* && "$favs" != *"'nemo.desktop'"* ]] || return 0
+  user_dconf write /org/gnome/shell/favorite-apps "$(sed "s/'org.gnome.Nautilus.desktop'/'nemo.desktop'/" <<<"$favs")"
 }
 
 # antigravity_ide_install — Antigravity IDE 2.x: Google ships it for Linux as a

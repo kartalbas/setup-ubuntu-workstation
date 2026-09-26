@@ -1,0 +1,20 @@
+# Managed by setup-ubuntu-workstation: Nemo like Windows Explorer — the folder
+# tree on the left, the details list (Name, Date modified, Type, Size) on the
+# right, folders first, double-click opens. Nemo's own "Open in Terminal"
+# opens the default terminal.
+[org/nemo/preferences]
+default-folder-viewer='list-view'
+sort-directories-first=true
+click-policy='double'
+
+[org/nemo/window-state]
+side-pane-view='tree'
+start-with-sidebar=true
+
+[org/nemo/list-view]
+default-visible-columns=['name', 'date_modified', 'type', 'size']
+default-column-order=['name', 'date_modified', 'type', 'size']
+
+[org/cinnamon/desktop/default-applications/terminal]
+exec='x-terminal-emulator'
+exec-arg='-e'

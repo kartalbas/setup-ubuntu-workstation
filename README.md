@@ -109,6 +109,16 @@ copies with Ctrl+Shift+C.
 WezTerm and Contour, which earlier versions of this repository installed, are
 removed again by `install`.
 
+**Nemo** is the file manager, set up like Windows Explorer: the folder tree on
+the left, the details list (Name, Date modified, Type, Size) on the right,
+folders first, double-click opens, tabs with Ctrl+T/W and Ctrl+Tab, F2, F5,
+Delete / Shift+Delete, Alt+Left/Right/Up, Alt+Enter, Ctrl+Shift+N, Ctrl+F,
+and "Open in …" on right-click. Folders open in it, and it takes the Files
+app's place in the dock. Unlike Explorer, Backspace goes up and F3 opens a
+second pane (fixed in Nemo). Nautilus stays installed: GNOME needs it for the
+desktop icons and file dialogs, and "Show in folder" from an application may
+still open it while it runs.
+
 ## Your own config repository
 
 Keep your settings in a private repository of your own and put them on every
@@ -160,6 +170,7 @@ again. Nothing is removed when switched off.
 | 2 | Ghostty (to compare) | Ubuntu .deb (community), pinned | ✓ |
 | 69 | Terminal (Ptyxis) set up like Windows Terminal, with bash | Ubuntu | ✓ |
 | 72 | Files app: "Open in" kitty, Ghostty, Terminal (Ptyxis), VS Code, Antigravity IDE | this repo (nautilus-python) | ✓ |
+| 75 | Nemo as the file manager, like Windows Explorer (below) | Ubuntu | ✓ |
 | 3 | Quake Terminal: drop-down on F12 | GNOME extension, pinned | |
 | 4 | PowerShell 7 LTS | GitHub .deb, pinned | ✓ |
 | 5 | pwsh profile | this repo | ✓ |

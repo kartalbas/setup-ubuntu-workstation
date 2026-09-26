@@ -39,7 +39,7 @@ declare -gA PIN_APPLY=(
 # Packages from apt repositories, per config key.
 APT_TOOLS=(
   "GIT git" "GH gh" "CHROME google-chrome-stable" "EDGE microsoft-edge-stable" "VSCODE code"
-  "CLAUDE_CODE claude-code" "PTYXIS ptyxis"
+  "CLAUDE_CODE claude-code" "PTYXIS ptyxis" "NEMO nemo"
   "DOCKER_CLI docker-ce-cli docker-buildx-plugin docker-compose-plugin"
   "DOCKER_ENGINE docker-ce containerd.io" "KUBECTL kubectl" "HELM helm"
   "AZURE_CLI azure-cli" "GCLOUD google-cloud-cli" "TERRAFORM terraform" "VAULT vault"
