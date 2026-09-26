@@ -25,10 +25,10 @@ for n, line in enumerate(sys.stdin.read().split("\n")[:2], 1):
     p = conf["provider"][f"llm{n}"]
     name = rest[0] if rest else f"llm{n}-{model}"
     p["options"] = {"baseURL": url, "apiKey": token}
-    # The key is what the server knows; the name is what OpenCode shows.
-    p["models"] = {model: {"name": name, "limit": {"context": ctx, "output": 32768}}}
+    # OpenCode shows and selects the name; "id" is what the server is sent.
+    p["models"] = {name: {"id": model, "name": name, "limit": {"context": ctx, "output": 32768}}}
     if n == 1:
-        conf["model"] = f"llm1/{model}"
+        conf["model"] = f"llm1/{name}"
     print(f"llm{n}: {name} = {model} (context {ctx})", file=sys.stderr)
 os.makedirs(os.path.dirname(out), exist_ok=True)
 fd = os.open(out + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
