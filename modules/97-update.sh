@@ -80,7 +80,7 @@ update_run() { # [--all|--list]
   for i in "${pick[@]}"; do
     (( i >= 0 && i < ${#U_LABEL[@]} )) || die "There is no number $((i + 1))"
     case "${U_KIND[$i]}" in
-      ubuntu) ubuntu="${U_ARG[$i]}" ;;
+      ubuntu) ubuntu="${U_ARG[$i]}"; [[ "$ubuntu" == - ]] && ubuntu=" " ;;
       apt)    apt_pkgs+=("${U_ARG[$i]}") ;;
       pin)    [[ "${U_UPD[$i]}" == 1 ]] && pins+=("${U_ARG[$i]}") ;;
       snap)   run snap refresh "${U_ARG[$i]}" ;;
@@ -90,7 +90,7 @@ update_run() { # [--all|--list]
       muse)   vendor_installer "Muse Code (muse)" "https://dev.meta.ai/install.sh" muse ;;
     esac
   done
-  if [[ -n "$ubuntu" ]] || (( ${#apt_pkgs[@]} )); then
+  if [[ -n "${ubuntu// /}" ]] || (( ${#apt_pkgs[@]} )); then
     # shellcheck disable=SC2086  # $ubuntu: package names
     DEBIAN_FRONTEND=noninteractive run apt-get install -y -q --only-upgrade $ubuntu "${apt_pkgs[@]}"
   fi
@@ -110,7 +110,7 @@ update_run() { # [--all|--list]
 }
 
 _updates_apt() {
-  local entry key pkg have cand others=() managed=" "
+  local entry key pkg have cand others=() managed=" " unused
   for entry in "${APT_TOOLS[@]}"; do
     key="${entry%% *}"; on "$key" || continue
     for pkg in ${entry#* }; do
@@ -123,7 +123,9 @@ _updates_apt() {
   while read -r pkg; do
     [[ "$managed" == *" $pkg "* ]] || others+=("$pkg")
   done < <(apt list --upgradable 2>/dev/null | awk -F/ 'NR > 1 {print $1}')
-  _u_add "Ubuntu (all other packages)" "" "${#others[@]} newer" ubuntu "${others[*]}" "$(( ${#others[@]} > 0 ))"
+  unused="$(apt-get -s autoremove 2>/dev/null | grep -c '^Remv' || true)"
+  _u_add "Ubuntu (all other packages)" "" "${#others[@]} newer, $unused unused" ubuntu "${others[*]:--}" \
+    "$(( ${#others[@]} + unused > 0 ))"
 }
 
 _updates_pinned() {
