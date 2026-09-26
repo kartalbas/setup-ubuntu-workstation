@@ -338,7 +338,8 @@ user_gui_env() {
   uid="$(id -u "$TARGET_USER")"; run="/run/user/$uid"
   printf 'XDG_RUNTIME_DIR=%s\n' "$run"
   [[ -S "$run/bus" ]] && printf 'DBUS_SESSION_BUS_ADDRESS=unix:path=%s/bus\n' "$run"
-  sock="$(find "$run" -maxdepth 1 -name 'wayland-[0-9]*' -type s 2>/dev/null | sort | head -1)"
+  # (find cannot enter the document portal's mount there, not even as root)
+  sock="$(find "$run" -maxdepth 1 -name 'wayland-[0-9]*' -type s 2>/dev/null | sort | head -1 || true)"
   [[ -n "$sock" ]] && printf 'WAYLAND_DISPLAY=%s\n' "$(basename "$sock")"
   return 0
 }

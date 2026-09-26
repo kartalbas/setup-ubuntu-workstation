@@ -98,6 +98,25 @@ copies with Ctrl+Shift+C.
 WezTerm and Contour, which earlier versions of this repository installed, are
 removed again by `install`.
 
+## Where your settings live
+
+Nothing of this goes into git — the repository only has examples with
+placeholders (`config.example.conf`, `templates/opencode.json`).
+
+| What | Where | Mode |
+|---|---|---|
+| Which tools are on or off | `/etc/setup-ubuntu-workstation/config.conf` | 644 root |
+| Newer versions chosen with `update` (only once you chose one) | `/etc/setup-ubuntu-workstation/versions.local.conf` | 644 root |
+| OpenCode: your LLM servers with URL, token and name | `~/.config/opencode/opencode.json` | 600 |
+| Your own terminal and shell settings (never overwritten) | `~/.config/kitty/local.conf`, `~/.config/ghostty/local.conf`, `~/.config/powershell/profile.local.ps1`, `~/.bashrc` outside the marked block | 644 |
+| Changes made in Terminal's (Ptyxis) preferences | `~/.config/dconf/user` | 664 |
+| git name and e-mail | `~/.gitconfig` | 664 |
+| Sign-ins | gh `~/.config/gh/hosts.yml` (token in the keyring), Claude Code `~/.claude/.credentials.json`, Codex `~/.codex/auth.json`, Muse `~/.config/muse/auth.json`, agy in the GNOME keyring (`~/.local/share/keyrings/`) | 600 |
+
+The files `setup-ubuntu-workstation` manages (`kitty.conf`, `config.ghostty`,
+`profile.ps1`, the marked block in `~/.bashrc`, …) are rewritten by `install`;
+put your own settings into the files above instead.
+
 ## What gets installed
 
 `on` = default. Change with `sudo ./setup.sh config set KEY 0|1` (the keys and
