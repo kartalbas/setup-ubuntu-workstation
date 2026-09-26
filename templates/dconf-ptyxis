@@ -1,0 +1,42 @@
+# Managed by setup-ubuntu-workstation: Ptyxis (GNOME's "Terminal") set up like
+# Windows Terminal as far as it goes, with bash. Defaults for every user: what
+# is changed in Ptyxis's preferences wins.
+[org/gnome/Ptyxis]
+default-profile-uuid='@PTYXIS_PROFILE_UUID@'
+profile-uuids=['@PTYXIS_PROFILE_UUID@']
+use-system-font=false
+font-name='Cascadia Mono 12'
+cursor-shape='ibeam'
+cursor-blink-mode='on'
+default-columns=uint32 120
+default-rows=uint32 30
+restore-session=false
+restore-window-size=false
+scrollbar-policy='always'
+visual-bell=false
+toast-on-copy-clipboard=false
+prompt-on-close=false
+word-char-exceptions=@ms '_'
+
+[org/gnome/Ptyxis/Profiles/@PTYXIS_PROFILE_UUID@]
+label='Bash'
+palette='campbell'
+scrollback-lines=9001
+
+[org/gnome/Ptyxis/Shortcuts]
+paste-clipboard='<ctrl>v'
+move-next-tab='<ctrl>Tab'
+move-previous-tab='<ctrl><shift>Tab'
+focus-tab-1='<ctrl><alt>1'
+focus-tab-2='<ctrl><alt>2'
+focus-tab-3='<ctrl><alt>3'
+focus-tab-4='<ctrl><alt>4'
+focus-tab-5='<ctrl><alt>5'
+focus-tab-6='<ctrl><alt>6'
+focus-tab-7='<ctrl><alt>7'
+focus-tab-8='<ctrl><alt>8'
+focus-tab-9='<ctrl><alt>9'
+focus-tab-10=''
+move-tab-left=''
+move-tab-right=''
+close-window=''

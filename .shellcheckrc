@@ -1,0 +1,8 @@
+# Template placeholders (@NAME@) are filled from shell variables of the same
+# name by render() through indirect expansion, and setup.sh sources every
+# module, so globals set in one module are used in another: shellcheck
+# follows neither. Many strings are shell code written for the user's own
+# bash (bashrc block, doctor checks), so $VAR and ~ inside quotes are meant
+# to stay unexpanded.
+disable=SC2034,SC2153,SC2016,SC2088
+external-sources=true

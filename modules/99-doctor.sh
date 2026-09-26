@@ -1,0 +1,89 @@
+# shellcheck shell=bash
+# modules/99-doctor.sh — read-only check: every enabled tool answers, with
+# its version, as the workstation user would call it.
+
+_d_ok=0 _d_bad=0
+# _tool KEY LABEL COMMAND... — the command's first output line is the version.
+_tool() {
+  local key="$1" label="$2" out; shift 2
+  on "$key" || return 0
+  if out="$(user_out bash -lc "$*" 2>&1 | grep -v '^\s*$' | head -1)" && [[ -n "$out" ]]; then
+    log_ok "$(printf '%-24s %s' "$label" "$out")"; _d_ok=$((_d_ok + 1))
+  else
+    log_err "$(printf '%-24s %s' "$label" "missing or not working")"; _d_bad=$((_d_bad + 1))
+  fi
+}
+
+doctor() {
+  log_step "Doctor ($TARGET_USER)"
+  _tool KITTY "kitty" kitty --version
+  _tool GHOSTTY "Ghostty" ghostty --version
+  _tool PTYXIS "Ptyxis" ptyxis --version
+  _tool QUAKE_TERMINAL "Quake Terminal" "test -d /usr/share/gnome-shell/extensions/$QUAKE_UUID && cat /usr/share/gnome-shell/extensions/$QUAKE_UUID/.setup-ubuntu-workstation-version"
+  _tool PWSH "PowerShell" "pwsh -NoLogo -NoProfile -Command '\$PSVersionTable.PSVersion.ToString()'"
+  _tool PWSH_PROFILE "pwsh profile" "test -f ~/.config/powershell/profile.ps1 && echo ~/.config/powershell/profile.ps1"
+  _tool STARSHIP "starship" starship --version
+  _tool ZOXIDE "zoxide" zoxide --version
+  _tool CASCADIA "Cascadia fonts" "fc-list | grep -c 'Cascadia Mono' | sed 's/\$/ font files/'"
+  _tool NERD_FONTS "Nerd Fonts" "fc-list | grep -ci 'Nerd Font' | sed 's/\$/ font files/'"
+  _tool CHROME "Google Chrome" google-chrome --version
+  _tool EDGE "Microsoft Edge" microsoft-edge --version
+  _tool CHROMIUM "Chromium" "snap list chromium | tail -1 | awk '{print \"chromium\", \$2}'"
+  _tool VSCODE "VS Code" "code --version | head -1"
+  _tool ANTIGRAVITY "Antigravity IDE" "dpkg-query -W -f='antigravity \${Version}' antigravity"
+  _tool JETBRAINS_TOOLBOX "JetBrains Toolbox" "readlink -f /usr/local/bin/jetbrains-toolbox"
+  _tool NEOVIM "Neovim" "nvim --version | head -1"
+  _tool BCOMPARE "Beyond Compare" "dpkg-query -W -f='bcompare \${Version}' bcompare"
+  _tool CLAUDE_CODE "Claude Code" claude --version
+  _tool CODEX "Codex" codex --version
+  _tool AGY "agy" agy --version
+  _tool MUSE "Muse Code" muse --version
+  _tool OPENCODE "OpenCode" opencode --version
+  _tool GIT "git" git --version
+  _tool GH "gh" "gh --version | head -1"
+  _tool GIT_LFS "git-lfs" git lfs version
+  _tool LAZYGIT "lazygit" "lazygit --version | cut -c1-80"
+  _tool DELTA "delta" delta --version
+  _tool JQ "jq" jq --version
+  _tool YQ "yq" yq --version
+  _tool RIPGREP "ripgrep" "rg --version | head -1"
+  _tool FD "fd" fd --version
+  _tool FZF "fzf" fzf --version
+  _tool BAT "bat" "bat --version"
+  _tool SEVENZIP "7-Zip" "7z | head -2 | tail -1"
+  _tool MC "Midnight Commander" "mc --version | head -1"
+  _tool NODE "Node.js (nvm)" '. ~/.nvm/nvm.sh && echo "$(node --version), default $(nvm version default)"'
+  _tool YARN_PNPM "yarn / pnpm" '. ~/.nvm/nvm.sh && echo "yarn $(yarn --version) · pnpm $(pnpm --version)"'
+  _tool PYTHON "Python (uv)" 'echo "$(python3 --version) · uv $(uv --version | cut -d" " -f2)"'
+  _tool GO "Go" /usr/local/go/bin/go version
+  _tool JAVA "Java" "java -version 2>&1 | head -1"
+  _tool MAVEN "Maven" "mvn -version | head -1"
+  _tool FLUTTER "Flutter" "~/.local/share/flutter/bin/flutter --version 2>/dev/null | head -1"
+  _tool RUST "Rust" "~/.cargo/bin/rustc --version"
+  _tool DOTNET ".NET" "dotnet --version"
+  _tool PSQL "psql" psql --version
+  _tool MONGOSH "mongosh" mongosh --version
+  _tool REDIS_CLI "redis-cli" redis-cli --version
+  _tool MYSQL_CLIENT "mysql" mysql --version
+  _tool DOCKER_CLI "docker" "docker --version && docker compose version | head -1 >/dev/null"
+  _tool DOCKER_ENGINE "Docker Engine" "systemctl is-active docker && id -nG | grep -qw docker && echo 'running, user in group docker' || echo 'running — log out/in for the docker group'"
+  _tool KUBECTL "kubectl" "kubectl version --client | head -1"
+  _tool HELM "helm" "helm version --short"
+  _tool KIND "kind" kind --version
+  _tool K9S "k9s" "k9s version --short | head -1"
+  _tool KUBECTX "kubectx / kubens" "echo kubectx \$(kubectx --version) · kubens \$(kubens --version)"
+  _tool STERN "stern" "stern --version | head -1"
+  _tool KREW "krew" "~/.krew/bin/kubectl-krew version | grep GitTag"
+  _tool CMCTL "cmctl" "cmctl version --client --short 2>/dev/null || cmctl version --client | head -1"
+  _tool ARGOCD "argocd" "argocd version --client --short"
+  _tool TKN "tkn" "tkn version | head -1"
+  _tool ARGO "argo / rollouts" "echo argo \$(argo version --short 2>/dev/null | head -1) · \$(kubectl-argo-rollouts version --short 2>/dev/null | head -1)"
+  _tool AZURE_CLI "Azure CLI" "az version --query '\"azure-cli\"' -o tsv"
+  _tool GCLOUD "gcloud" "gcloud --version 2>/dev/null | head -1"
+  _tool TERRAFORM "terraform" "terraform version | head -1"
+  _tool VAULT "vault" "vault version"
+  _tool MKCERT "mkcert" mkcert --version
+  echo >&2
+  if (( _d_bad )); then log_warn "$_d_ok ok, $_d_bad missing or failing"; exit 1; fi
+  log_ok "All $_d_ok enabled tools answer"
+}

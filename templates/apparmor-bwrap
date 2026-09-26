@@ -1,0 +1,9 @@
+# Managed by setup-ubuntu-workstation: lets bubblewrap (Claude Code's sandbox)
+# create user namespaces. From the Claude Code docs, "Sandboxing".
+abi <abi/4.0>,
+include <tunables/global>
+
+profile bwrap /usr/bin/bwrap flags=(unconfined) {
+  userns,
+  include if exists <local/bwrap>
+}
