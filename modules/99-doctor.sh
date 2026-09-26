@@ -48,6 +48,7 @@ doctor() {
   _tool GIT_LFS "git-lfs" git lfs version
   _tool LAZYGIT "lazygit" "lazygit --version | cut -c1-80"
   _tool DELTA "delta" delta --version
+  _tool BUILD_TOOLS "gcc / make" 'echo "$(gcc --version | head -1) · $(make --version | head -1)"'
   _tool JQ "jq" jq --version
   _tool YQ "yq" yq --version
   _tool RIPGREP "ripgrep" "rg --version | head -1"

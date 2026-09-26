@@ -204,6 +204,7 @@ again. Nothing is removed when switched off.
 | **E** | **Command-line tools** | | |
 | 24-29 | jq · yq · ripgrep · fd · fzf · bat | Ubuntu / GitHub, pinned | ✓ |
 | 30-32 | 7-Zip · Midnight Commander · curl, wget, tree, htop, openssl, unzip | Ubuntu | ✓ |
+| 76 | build-essential: gcc, g++, make — for npm and pip modules with native parts, Rust crates | Ubuntu | ✓ |
 | **F** | **Languages** | | |
 | 33 | Node.js — only via nvm, newest LTS, set as default | nvm, pinned | ✓ |
 | 34 | yarn, pnpm | Corepack on the nvm Node | ✓ |

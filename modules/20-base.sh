@@ -8,6 +8,7 @@ base_setup() {
   local pkgs=()
   on GIT && pkgs+=(git)
   on BASICS && pkgs+=(curl wget tree htop openssl unzip xz-utils wl-clipboard)
+  on BUILD_TOOLS && pkgs+=(build-essential)
   on JQ && pkgs+=(jq)
   on SEVENZIP && pkgs+=(7zip)
   on MC && pkgs+=(mc)
