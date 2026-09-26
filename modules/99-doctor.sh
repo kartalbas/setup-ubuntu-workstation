@@ -19,7 +19,7 @@ doctor() {
   _tool KITTY "kitty" kitty --version
   _tool GHOSTTY "Ghostty" ghostty --version
   _tool PTYXIS "Ptyxis" ptyxis --version
-  _tool FILES_OPEN_IN "Files app: Open in" "python3 -W ignore /usr/share/nautilus-python/extensions/setup-ubuntu-workstation-open-in.py"
+  _tool FILES_OPEN_IN "Files app: Open in" "/usr/bin/python3 -W ignore /usr/share/nautilus-python/extensions/setup-ubuntu-workstation-open-in.py"
   _tool QUAKE_TERMINAL "Quake Terminal" "test -d /usr/share/gnome-shell/extensions/$QUAKE_UUID && cat /usr/share/gnome-shell/extensions/$QUAKE_UUID/.setup-ubuntu-workstation-version"
   _tool PWSH "PowerShell" "pwsh -NoLogo -NoProfile -Command '\$PSVersionTable.PSVersion.ToString()'"
   _tool PWSH_PROFILE "pwsh profile" "test -f ~/.config/powershell/profile.ps1 && echo ~/.config/powershell/profile.ps1"
