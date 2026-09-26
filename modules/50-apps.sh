@@ -27,6 +27,17 @@ apps_setup() {
   on NEOVIM && tar_app_install NEOVIM nvim "bin/nvim"
   on JETBRAINS_TOOLBOX && jetbrains_toolbox_install
   on BCOMPARE && deb_install BCOMPARE bcompare
+  on FILES_OPEN_IN && files_open_in
+  return 0
+}
+
+# files_open_in — "Open in kitty / Ghostty / Terminal (Ptyxis) / VS Code /
+# Antigravity IDE" in the Files app, through a nautilus-python extension. The
+# Files app loads it when it next starts.
+files_open_in() {
+  apt_install python3-nautilus
+  render nautilus-open-in.py | atomic_write /usr/share/nautilus-python/extensions/setup-ubuntu-workstation-open-in.py 0644
+  if (( CHANGED )); then log_info "Files app: the new entries appear once it restarts (close its windows, or log out and in)"; fi
   return 0
 }
 

@@ -154,6 +154,7 @@ again. Nothing is removed when switched off.
 | 1 | kitty (default terminal) | GitHub, pinned | ✓ |
 | 2 | Ghostty (to compare) | Ubuntu .deb (community), pinned | ✓ |
 | 69 | Terminal (Ptyxis) set up like Windows Terminal, with bash | Ubuntu | ✓ |
+| 72 | Files app: "Open in" kitty, Ghostty, Terminal (Ptyxis), VS Code, Antigravity IDE | this repo (nautilus-python) | ✓ |
 | 3 | Quake Terminal: drop-down on F12 | GNOME extension, pinned | |
 | 4 | PowerShell 7 LTS | GitHub .deb, pinned | ✓ |
 | 5 | pwsh profile | this repo | ✓ |
