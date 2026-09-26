@@ -113,8 +113,8 @@ removed again by `install`.
 the left, the details list (Name, Date modified, Type, Size) on the right,
 folders first, double-click opens, tabs with Ctrl+T/W and Ctrl+Tab, F2, F5,
 Delete / Shift+Delete, Alt+Left/Right/Up, Alt+Enter, Ctrl+Shift+N, Ctrl+F,
-and "Open in …" on right-click. Folders open in it, and it takes the Files
-app's place in the dock. Unlike Explorer, Backspace goes up and F3 opens a
+and "Open in …" on right-click. Folders open in it, Win+E opens it, and it
+takes the Files app's place in the dock. Unlike Explorer, Backspace goes up and F3 opens a
 second pane (fixed in Nemo). Nautilus stays installed: GNOME needs it for the
 desktop icons and file dialogs, and "Show in folder" from an application may
 still open it while it runs.

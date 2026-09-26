@@ -1,7 +1,8 @@
 # Managed by setup-ubuntu-workstation: Nemo like Windows Explorer — the folder
 # tree on the left, the details list (Name, Date modified, Type, Size) on the
 # right, folders first, double-click opens. Nemo's own "Open in Terminal"
-# opens the default terminal.
+# opens the default terminal. Win+E opens the home folder in the default file
+# manager, which is Nemo (GNOME leaves that key unbound).
 [org/nemo/preferences]
 default-folder-viewer='list-view'
 sort-directories-first=true
@@ -18,3 +19,6 @@ default-column-order=['name', 'date_modified', 'type', 'size']
 [org/cinnamon/desktop/applications/terminal]
 exec='x-terminal-emulator'
 exec-arg='-e'
+
+[org/gnome/settings-daemon/plugins/media-keys]
+home=['<Super>e']
