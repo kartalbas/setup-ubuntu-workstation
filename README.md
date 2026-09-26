@@ -38,8 +38,8 @@ settings) go to your home, system parts to the system. Re-running is safe and
 brings pinned tools to the versions in `versions.conf`.
 
 **OpenCode with your own LLM servers** (OpenAI-compatible, e.g. llama-server):
-`./setup.sh opencode` asks for the base URL and token of `llm1` and `llm2`,
-reads model and context size from each server and writes
+`./setup.sh opencode` asks for the base URL, token and a display name of `llm1`
+and `llm2`, reads model and context size from each server and writes
 `~/.config/opencode/opencode.json` (mode 0600). URLs and tokens stay on your
 machine; the repository only has the template with placeholders
 (`templates/opencode.json`).

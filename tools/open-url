@@ -1,0 +1,4 @@
+#!/bin/sh
+# open-url URL — open a sign-in page in the default browser without its log
+# lines landing in the terminal (used as BROWSER by `setup.sh login`).
+setsid -f xdg-open "$@" >/dev/null 2>&1

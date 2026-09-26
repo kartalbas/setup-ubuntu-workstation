@@ -7,7 +7,7 @@ base_setup() {
   log_step "Git, fonts and command-line tools"
   local pkgs=()
   on GIT && pkgs+=(git)
-  on BASICS && pkgs+=(curl wget tree htop openssl unzip xz-utils)
+  on BASICS && pkgs+=(curl wget tree htop openssl unzip xz-utils wl-clipboard)
   on JQ && pkgs+=(jq)
   on SEVENZIP && pkgs+=(7zip)
   on MC && pkgs+=(mc)

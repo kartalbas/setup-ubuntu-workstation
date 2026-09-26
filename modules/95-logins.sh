@@ -11,9 +11,10 @@ logins_run() {
   _login "Claude Code" CLAUDE_CODE "claude auth status" "claude auth login"
   _login "OpenAI Codex" CODEX "codex login status" "codex login"
   # agy has no login subcommand: it signs in on its first start (browser, or a
-  # URL + code over SSH); leave it with /exit afterwards. Neither agy nor muse
-  # can report the signed-in state from a script, so they are always offered.
-  _login "Antigravity CLI (agy) — sign in, then leave with /exit" AGY "false" "agy"
+  # URL + code over SSH); leave it with /exit afterwards. Once signed in it
+  # records the finished onboarding.
+  _login "Antigravity CLI (agy) — sign in, then leave with /exit" AGY \
+    "grep -qE '\"onboardingComplete\": *true' \"\$HOME/.gemini/antigravity-cli/cache/onboarding.json\"" "agy"
   _login "Muse Code" MUSE "test -s \"\$HOME/.config/muse/auth.json\"" "TBH_CREDENTIAL_BACKEND=file muse login"
   _login "OpenCode — your own LLM servers" OPENCODE "test -s \"\$HOME/.config/opencode/opencode.json\"" \
     "'$REPO_ROOT/setup.sh' opencode"
@@ -26,6 +27,8 @@ _login() {
   on "$key" || return 0
   # As root (at the end of install): as the user, reaching the desktop session.
   if (( EUID == 0 )); then mapfile -t env < <(user_gui_env); env=(sudo -u "$TARGET_USER" -H env "${env[@]}"); fi
+  # Sign-in pages open in the browser without its log lines in the terminal.
+  env+=(env "BROWSER=$REPO_ROOT/tools/open-url")
   if "${env[@]}" bash -lc "$check" >/dev/null 2>&1; then
     log_ok "$label: already signed in"; return 0
   fi

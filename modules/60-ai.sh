@@ -23,12 +23,14 @@ ai_setup() {
 # server, writes ~/.config/opencode/opencode.json (0600). The values stay on
 # this machine; the repository has the template with placeholders only.
 opencode_llms() {
-  local n url token lines=""
+  local n url token name lines=""
   for n in 1 2; do
     read -rp "llm$n base URL (https://…/v1): " url
     read -rsp "llm$n token: " token; echo
+    read -rp "llm$n name in OpenCode (e.g. llm$n-mymodel; Enter = llm$n-<model id>): " name
     [[ -n "$url" && -n "$token" ]] || die "llm$n: URL and token are needed"
-    lines+="$url $token"$'\n'
+    [[ "$name" =~ ^[A-Za-z0-9._-]*$ ]] || die "llm$n: the name may only have letters, digits, . _ -"
+    lines+="$url $token $name"$'\n'
   done
   printf '%s' "$lines" | python3 "$REPO_ROOT/tools/opencode-llms.py" \
     "$REPO_ROOT/templates/opencode.json" "$TARGET_HOME/.config/opencode/opencode.json"
