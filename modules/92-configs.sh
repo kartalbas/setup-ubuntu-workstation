@@ -28,6 +28,14 @@ configs_source() {
   if [[ -f "$sub/hosts/$host/$2" ]]; then printf '%s' "$sub/hosts/$host/$2"; else printf '%s' "$sub/$2"; fi
 }
 
+# same_content A B — the same file; JSON counts as the same when its content
+# is (sops writes it with other indentation).
+same_content() {
+  cmp -s "$1" "$2" && return 0
+  python3 -c 'import json, sys; sys.exit(0 if json.load(open(sys.argv[1])) == json.load(open(sys.argv[2])) else 1)' \
+    "$1" "$2" 2>/dev/null
+}
+
 # configs_system — as root, during install: the repository's config.conf
 # becomes this machine's.
 configs_system() {
@@ -55,7 +63,7 @@ configs_run() { # [save]
         mkdir -p "$(dirname "$dst")"
         if [[ "$src" == *.sops.* ]]; then
           sops -d "$f" >"$plain" 2>/dev/null || die "Cannot decrypt $src — is the key here? $dir/bin/secrets unlock"
-          cmp -s "$plain" "$dst" || install -m 0600 "$plain" "$dst"
+          same_content "$plain" "$dst" || install -m 0600 "$plain" "$dst"
         else
           cmp -s "$f" "$dst" || install -m 0644 "$f" "$dst"
         fi
@@ -69,7 +77,7 @@ configs_run() { # [save]
         f="$(configs_source "$dir" "$src")"; mkdir -p "$(dirname "$f")"
         if [[ "$src" == *.sops.* ]]; then
           # Only re-encrypt when the content changed (every encryption differs).
-          if [[ -f "$f" ]] && sops -d "$f" 2>/dev/null | cmp -s - "$dst"; then continue; fi
+          if [[ -f "$f" ]] && sops -d "$f" >"$plain" 2>/dev/null && same_content "$plain" "$dst"; then continue; fi
           sops --config "$dir/.sops.yaml" -e --filename-override "$f" "$dst" >"$plain" \
             || die "Cannot encrypt $src — see $dir/.sops.yaml and bin/secrets"
           cp "$plain" "$f"
