@@ -5,9 +5,9 @@
 import os
 import shutil
 
-from gi import require_version
-require_version('Nautilus', '4.0')
-from gi.repository import GLib, GObject, Nautilus  # noqa: E402
+# No require_version: the Files app loads the Nautilus API version it speaks
+# (4.1 in Nautilus 50), as the nautilus-python examples do.
+from gi.repository import GLib, GObject, Nautilus
 
 # label, program, command for a path, folders only
 ENTRIES = [
