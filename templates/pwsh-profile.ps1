@@ -41,6 +41,7 @@ if (Test-Path (Join-Path $HOME '.local/share/flutter/bin')) {
 }
 Add-PathFront (Join-Path $HOME '.cargo/bin')
 Add-PathFront (Join-Path $HOME '.krew/bin')
+Add-PathFront (Join-Path $HOME '.local/share/JetBrains/Toolbox/scripts')   # IDE launchers
 
 # ---- Commands --------------------------------------------------------------------
 # The real ls and pwd, not PowerShell's aliases; gc is Get-Content's alias,

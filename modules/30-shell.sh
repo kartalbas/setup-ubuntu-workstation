@@ -34,6 +34,7 @@ bash_block() {
     fi
     on RUST && echo '[ -s "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"'
     on KREW && echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"'
+    on JETBRAINS_TOOLBOX && echo '[ -d "$HOME/.local/share/JetBrains/Toolbox/scripts" ] && export PATH="$HOME/.local/share/JetBrains/Toolbox/scripts:$PATH"'
     on ZOXIDE && echo 'command -v zoxide >/dev/null && eval "$(zoxide init bash)"'
     # Muse 1.4 cannot store its login in the keyring on Linux yet
     # (github.com/meta-models/muse-code-sdk/issues/38): use its file store.

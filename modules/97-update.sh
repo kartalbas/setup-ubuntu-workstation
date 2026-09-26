@@ -19,7 +19,7 @@ declare -gA PIN_APPLY=(
   [NERDFONT_CASCADIACODE]="nerd_fonts_install" [NERDFONT_CASCADIAMONO]="nerd_fonts_install"
   [NERDFONT_FIRACODE]="nerd_fonts_install" [NERDFONT_JETBRAINSMONO]="nerd_fonts_install"
   [NEOVIM]="tar_app_install NEOVIM nvim bin/nvim"
-  [JETBRAINS_TOOLBOX]="tar_app_install JETBRAINS_TOOLBOX jetbrains-toolbox bin/jetbrains-toolbox"
+  [JETBRAINS_TOOLBOX]="jetbrains_toolbox_install"
   [BCOMPARE]="deb_install BCOMPARE bcompare"
   [CODEX]="bin_install CODEX codex codex-x86_64-unknown-linux-musl" [OPENCODE]="bin_install OPENCODE opencode"
   [GIT_LFS]="bin_install GIT_LFS git-lfs" [LAZYGIT]="bin_install LAZYGIT lazygit"
@@ -150,6 +150,7 @@ _updates_pinned() {
     [[ "$line" =~ ^([A-Z0-9_]+)_(VERSION|MINOR)= ]] || continue
     p="${BASH_REMATCH[1]}" k="${BASH_REMATCH[1]}_${BASH_REMATCH[2]}"
     key="${PIN_KEY[$p]:-$p}"; on "$key" || continue
+    [[ "$p" == JETBRAINS_TOOLBOX ]] && continue   # updates itself
     label="${p,,}"; label="${label//_/-}"; [[ "$p" == KUBECTL ]] && label="kubectl channel (pkgs.k8s.io)"
     _u_add "$label" "${VER[$k]:-}" "${NEWV[$k]:-?}" pin "$p" "$(_flag _newer "${NEWV[$k]:-}" "${VER[$k]:-}")"
   done <"$REPO_ROOT/versions.conf"

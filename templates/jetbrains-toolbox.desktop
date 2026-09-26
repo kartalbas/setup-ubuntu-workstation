@@ -1,0 +1,11 @@
+[Desktop Entry]
+# Written by setup-ubuntu-workstation; JetBrains Toolbox replaces it with its
+# own on its first start.
+Type=Application
+Name=JetBrains Toolbox
+Exec=@TOOLBOX_DIR@/bin/jetbrains-toolbox
+Icon=@TOOLBOX_DIR@/bin/toolbox.svg
+StartupWMClass=jetbrains-toolbox
+StartupNotify=false
+Terminal=false
+Categories=Development;

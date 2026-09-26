@@ -25,7 +25,7 @@ apps_setup() {
   fi
   on ANTIGRAVITY && antigravity_ide_install
   on NEOVIM && tar_app_install NEOVIM nvim "bin/nvim"
-  on JETBRAINS_TOOLBOX && tar_app_install JETBRAINS_TOOLBOX jetbrains-toolbox "bin/jetbrains-toolbox"
+  on JETBRAINS_TOOLBOX && jetbrains_toolbox_install
   on BCOMPARE && deb_install BCOMPARE bcompare
   return 0
 }
@@ -46,6 +46,29 @@ antigravity_ide_install() {
   render antigravity-ide-url-handler.desktop \
     | atomic_write /usr/local/share/applications/antigravity-ide-url-handler.desktop 0644
   if (( CHANGED )); then run update-desktop-database -q /usr/local/share/applications; fi
+  return 0
+}
+
+# jetbrains_toolbox_install — JetBrains Toolbox manages itself and the IDEs in
+# the user's home: unpacked to ~/.local/share/JetBrains/Toolbox as JetBrains'
+# instructions say, and from then on it updates itself. It writes its own menu
+# entry on its first start; until then the one from here.
+TOOLBOX_REL=".local/share/JetBrains/Toolbox"
+jetbrains_toolbox_install() {
+  local dir="$TARGET_HOME/$TOOLBOX_REL" file old
+  # Earlier versions of this script put it in /opt, where it cannot update itself.
+  for old in /opt/jetbrains-toolbox-*; do [[ -d "$old" ]] && run rm -rf "$old"; done
+  [[ -L /usr/local/bin/jetbrains-toolbox ]] && run rm -f /usr/local/bin/jetbrains-toolbox
+  if [[ -x "$dir/bin/jetbrains-toolbox" ]]; then
+    log_ok "JetBrains Toolbox already installed (it updates itself)"
+  else
+    file="$(fetch JETBRAINS_TOOLBOX)"; chmod 0644 "$file"
+    as_user_sh "mkdir -p '$dir' && tar -xzf '$file' -C '$dir' --strip-components=1"
+    log_ok "JetBrains Toolbox $(ver JETBRAINS_TOOLBOX_VERSION) installed in ~/$TOOLBOX_REL"
+  fi
+  TOOLBOX_DIR="$dir"
+  [[ -e "$TARGET_HOME/.local/share/applications/jetbrains-toolbox.desktop" ]] \
+    || render jetbrains-toolbox.desktop | user_file "$TARGET_HOME/.local/share/applications/jetbrains-toolbox.desktop"
   return 0
 }
 
