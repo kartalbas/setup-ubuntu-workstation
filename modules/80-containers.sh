@@ -10,11 +10,13 @@ containers_setup() {
   local pkgs=()
   on KUBECTL && pkgs+=(kubectl)
   on HELM && pkgs+=(helm)
-  if (( ${#pkgs[@]} )); then apt_install "${pkgs[@]}"; apt_upgrade_pkgs "${pkgs[@]}"; fi
-  # Once: replace Google's kubectl dispatcher by Kubernetes' own kubectl.
+  # Once: replace Google's kubectl dispatcher by Kubernetes' own kubectl
+  # (before upgrading, which would otherwise have to go "down" from 1:586…).
   if on KUBECTL && [[ "$(installed_version kubectl)" == 1:* ]]; then
+    apt_update
     DEBIAN_FRONTEND=noninteractive run apt-get install -y -q --allow-downgrades kubectl
   fi
+  if (( ${#pkgs[@]} )); then apt_install "${pkgs[@]}"; apt_upgrade_pkgs "${pkgs[@]}"; fi
   on KIND && bin_install KIND kind
   on K9S && deb_install K9S k9s
   if on KUBECTX; then bin_install KUBECTX kubectx; bin_install KUBENS kubens; fi
