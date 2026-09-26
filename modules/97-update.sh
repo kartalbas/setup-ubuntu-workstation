@@ -13,7 +13,7 @@ declare -gA PIN_KEY=(
 )
 # How a pinned tool gets its version (the same calls install makes).
 declare -gA PIN_APPLY=(
-  [KITTY]="kitty_install" [GHOSTTY]="deb_install GHOSTTY ghostty"
+  [KITTY]="kitty_install" [GHOSTTY]="deb_install GHOSTTY ghostty" [ANTIGRAVITY]="antigravity_ide_install"
   [PWSH]="deb_install PWSH powershell-lts" [STARSHIP]="bin_install STARSHIP starship"
   [ZOXIDE]="deb_install ZOXIDE zoxide" [QUAKE_TERMINAL]="quake_terminal_install"
   [NERDFONT_CASCADIACODE]="nerd_fonts_install" [NERDFONT_CASCADIAMONO]="nerd_fonts_install"
@@ -38,7 +38,7 @@ declare -gA PIN_APPLY=(
 # Packages from apt repositories, per config key.
 APT_TOOLS=(
   "GIT git" "GH gh" "CHROME google-chrome-stable" "EDGE microsoft-edge-stable" "VSCODE code"
-  "ANTIGRAVITY antigravity" "CLAUDE_CODE claude-code" "PTYXIS ptyxis"
+  "CLAUDE_CODE claude-code" "PTYXIS ptyxis"
   "DOCKER_CLI docker-ce-cli docker-buildx-plugin docker-compose-plugin"
   "DOCKER_ENGINE docker-ce containerd.io" "KUBECTL kubectl" "HELM helm"
   "AZURE_CLI azure-cli" "GCLOUD google-cloud-cli" "TERRAFORM terraform" "VAULT vault"
@@ -47,6 +47,8 @@ APT_TOOLS=(
 U_LABEL=() U_HAVE=() U_NEW=() U_KIND=() U_ARG=() U_UPD=()
 declare -gA NEWV=()
 _u_add() { U_LABEL+=("$1"); U_HAVE+=("${2:--}"); U_NEW+=("${3:--}"); U_KIND+=("$4"); U_ARG+=("$5"); U_UPD+=("$6"); }
+# _short VERSION — without epoch and Debian revision: 1:2.55.0-0ppa1~… → 2.55.0
+_short() { local v="$1"; [[ "$v" =~ ^[0-9]+: ]] && v="${v#*:}"; [[ "$v" == *-* ]] && v="${v%-*}"; printf '%s' "$v"; }
 _newer() { [[ -n "$1" && -n "$2" && "$1" != "$2" ]] && dpkg --compare-versions "$1" gt "$2" 2>/dev/null; }
 _flag() { if "$@"; then echo 1; else echo 0; fi; }
 
@@ -60,25 +62,28 @@ update_run() { # [--all|--list]
   _updates_other
   _updates_show
   [[ "$mode" == --list ]] && return 0
+  (( ${#U_SHOWN[@]} )) || return 0
   if [[ "$mode" == --all ]]; then answer=""
   else
     [[ -t 0 ]] || die "No terminal: sudo ./setup.sh update --all (or --list)"
-    read -rp "Update: Enter = everything marked ↑, numbers like 2 5-7, q = nothing: " answer
+    read -rp "Update: Enter = all of them, numbers like 2 5-7, q = nothing: " answer
   fi
   [[ "$answer" == q* ]] && return 0
   if [[ -z "$answer" ]]; then
-    for i in "${!U_UPD[@]}"; do [[ "${U_UPD[$i]}" == 1 ]] && pick+=("$i"); done
+    pick=("${U_SHOWN[@]}")
   else
     for n in ${answer//,/ }; do
       if [[ "$n" =~ ^([0-9]+)-([0-9]+)$ ]]; then
-        for (( a = BASH_REMATCH[1]; a <= BASH_REMATCH[2]; a++ )); do pick+=($((a - 1))); done
-      elif [[ "$n" =~ ^[0-9]+$ ]]; then pick+=($((n - 1)))
+        for (( a = BASH_REMATCH[1]; a <= BASH_REMATCH[2]; a++ )); do pick+=("$a"); done
+      elif [[ "$n" =~ ^[0-9]+$ ]]; then pick+=("$n")
       else die "Not a number: $n"; fi
     done
+    for i in "${!pick[@]}"; do
+      (( pick[i] >= 1 && pick[i] <= ${#U_SHOWN[@]} )) || die "There is no number ${pick[i]}"
+      pick[i]="${U_SHOWN[$((pick[i] - 1))]}"
+    done
   fi
-  (( ${#pick[@]} )) || { log_ok "Everything is up to date"; return 0; }
   for i in "${pick[@]}"; do
-    (( i >= 0 && i < ${#U_LABEL[@]} )) || die "There is no number $((i + 1))"
     case "${U_KIND[$i]}" in
       ubuntu) ubuntu="${U_ARG[$i]}"; [[ "$ubuntu" == - ]] && ubuntu=" " ;;
       apt)    apt_pkgs+=("${U_ARG[$i]}") ;;
@@ -96,6 +101,10 @@ update_run() { # [--all|--list]
   fi
   [[ -n "$ubuntu" ]] && DEBIAN_FRONTEND=noninteractive run apt-get autoremove --purge -y -q
   if (( ${#pins[@]} )); then
+    # URL and checksum of just the chosen tools (the check only had versions).
+    local tmp; tmp="$(mktemp)"
+    as_user bash "$REPO_ROOT/tools/pin-versions.sh" --only "${pins[@]}" >"$tmp" || die "Could not pin ${pins[*]}"
+    NEWV=(); _parse_kv_file "$tmp" NEWV; rm -f "$tmp"
     _updates_record "${pins[@]}"
     ver_load
     local -A applied=()
@@ -117,7 +126,7 @@ _updates_apt() {
       have="$(installed_version "$pkg")"; [[ -n "$have" ]] || continue
       cand="$(apt-cache policy "$pkg" 2>/dev/null | awk '/Candidate:/ {print $2}')"
       managed+="$pkg "
-      _u_add "$pkg" "$have" "$cand" apt "$pkg" "$(_flag _newer "$cand" "$have")"
+      _u_add "$pkg" "$(_short "$have")" "$(_short "$cand")" apt "$pkg" "$(_flag _newer "$cand" "$have")"
     done
   done
   while read -r pkg; do
@@ -132,8 +141,8 @@ _updates_pinned() {
   local tmp line p k key label
   tmp="$(mktemp)"
   log_info "Looking up the newest versions (a minute or two)…"
-  if ! as_user bash "$REPO_ROOT/tools/pin-versions.sh" >"$tmp" 2>"$tmp.err"; then
-    log_warn "Newest versions of the pinned tools not found: $(tail -1 "$tmp.err")"
+  if ! as_user bash "$REPO_ROOT/tools/pin-versions.sh" --check >"$tmp" 2>"$tmp.err"; then
+    log_warn "Newest versions of some pinned tools not found: $(tail -1 "$tmp.err")"
   fi
   NEWV=(); _parse_kv_file "$tmp" NEWV
   rm -f "$tmp" "$tmp.err"
@@ -175,12 +184,26 @@ print(v[0] if v else "")' 2>/dev/null)"
   fi
 }
 
+# _updates_show — only what is newer, numbered 1..n (U_SHOWN maps them back).
+U_SHOWN=()
 _updates_show() {
-  local i mark
-  printf '\n  %3s  %-30s %-24s %-24s\n' '#' Tool Installed Newest
+  local i w1=4 w2=9 unknown=()
+  U_SHOWN=()
   for i in "${!U_LABEL[@]}"; do
-    mark=""; [[ "${U_UPD[$i]}" == 1 ]] && mark="↑"
-    printf '  %3d  %-30s %-24s %-24s %s\n' $((i + 1)) "${U_LABEL[$i]:0:30}" "${U_HAVE[$i]:0:24}" "${U_NEW[$i]:0:24}" "$mark"
+    [[ "${U_NEW[$i]}" == "?" ]] && unknown+=("${U_LABEL[$i]}")
+    [[ "${U_UPD[$i]}" == 1 ]] || continue
+    U_SHOWN+=("$i")
+    (( ${#U_LABEL[$i]} > w1 )) && w1=${#U_LABEL[$i]}
+    (( ${#U_HAVE[$i]} > w2 )) && w2=${#U_HAVE[$i]}
+  done
+  (( ${#unknown[@]} )) && log_warn "Newest version unknown: ${unknown[*]}"
+  if (( ${#U_SHOWN[@]} == 0 )); then
+    log_ok "Everything is up to date (${#U_LABEL[@]} tools checked)"; return 0
+  fi
+  printf '\n  %s of %s tools have a newer version:\n\n' "${#U_SHOWN[@]}" "${#U_LABEL[@]}"
+  printf '  %3s  %-*s  %-*s  %s\n' '#' "$w1" Tool "$w2" Installed Newest
+  for i in "${!U_SHOWN[@]}"; do
+    printf '  %3d  %-*s  %-*s  %s\n' $((i + 1)) "$w1" "${U_LABEL[${U_SHOWN[$i]}]}" "$w2" "${U_HAVE[${U_SHOWN[$i]}]}" "${U_NEW[${U_SHOWN[$i]}]}"
   done
   echo
 }

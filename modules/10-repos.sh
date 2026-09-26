@@ -52,8 +52,6 @@ repos_setup() {
     apt_repo claude-code "https://downloads.claude.ai/claude-code/apt/$ch" "$ch" main \
       "https://downloads.claude.ai/keys/claude-code.asc" "$FPR_CLAUDE"
   fi
-  on ANTIGRAVITY && apt_repo antigravity "https://us-central1-apt.pkg.dev/projects/antigravity-auto-updater-dev/" antigravity-debian main \
-    "https://us-central1-apt.pkg.dev/doc/repo-signing-key.gpg" "$FPR_GOOGLE_AR"
   on GCLOUD && apt_repo google-cloud-sdk "https://packages.cloud.google.com/apt" cloud-sdk main \
     "https://packages.cloud.google.com/apt/doc/apt-key.gpg" "$FPR_GOOGLE_AR"
   { on TERRAFORM || on VAULT; } && apt_repo hashicorp "https://apt.releases.hashicorp.com" resolute main \
@@ -109,12 +107,19 @@ vendor_handover() {
   log_ok "$pkg keeps its own apt source ($name.sources)"
 }
 
-# Repositories this script added under earlier names: drop the leftovers.
-LEGACY_REPOS=(microsoft-vscode)
+# Repositories this script added earlier: drop the leftovers, with the
+# package installed from them where there was one (antigravity: the IDE's old
+# 1.x line; the IDE 2.x comes from Google's tarball now).
+LEGACY_REPOS=(microsoft-vscode antigravity)
+declare -gA LEGACY_REPO_PACKAGE=([antigravity]=antigravity)
 legacy_repos_cleanup() {
-  local n
+  local n pkg
   for n in "${LEGACY_REPOS[@]}"; do
     if grep -qs "$MANAGED_MARK" "/etc/apt/sources.list.d/$n.sources"; then
+      pkg="${LEGACY_REPO_PACKAGE[$n]:-}"
+      if [[ -n "$pkg" && -n "$(installed_version "$pkg")" ]]; then
+        DEBIAN_FRONTEND=noninteractive run apt-get purge --autoremove -y -q "$pkg"
+      fi
       run rm -f "/etc/apt/sources.list.d/$n.sources"; APT_UPDATED=0
     fi
     if [[ -f "/etc/apt/keyrings/$n.gpg" ]] && ! grep -rqs "keyrings/$n.gpg" /etc/apt/sources.list.d; then

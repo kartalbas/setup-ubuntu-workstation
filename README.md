@@ -120,7 +120,7 @@ again. Nothing is removed when switched off.
 | 66 | Microsoft Edge | Microsoft apt repo | ✓ |
 | 67 | Chromium | snap (Canonical) | ✓ |
 | 11 | VS Code | Microsoft apt repo | ✓ |
-| 12 | Antigravity IDE | Google apt repo | ✓ |
+| 12 | Antigravity IDE 2.x (the apt repository only has the old 1.x) | Google tarball, pinned | ✓ |
 | 13 | JetBrains Toolbox | JetBrains tarball, pinned | ✓ |
 | 14 | Neovim, Vim | GitHub tarball, pinned / Ubuntu | ✓ |
 | 15 | Beyond Compare (licence needed) | vendor .deb, pinned | ✓ |

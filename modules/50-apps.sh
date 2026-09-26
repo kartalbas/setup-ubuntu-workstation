@@ -6,7 +6,6 @@ apps_setup() {
   local pkgs=()
   on CHROME && pkgs+=(google-chrome-stable)
   on EDGE && pkgs+=(microsoft-edge-stable)
-  on ANTIGRAVITY && pkgs+=(antigravity)
   if on VSCODE; then
     # Let the package register (and keep up to date) its own apt source.
     echo "code code/add-microsoft-repo boolean true" | run debconf-set-selections
@@ -24,9 +23,29 @@ apps_setup() {
     if snap list chromium >/dev/null 2>&1; then log_ok "Chromium (snap) already installed"
     else run snap install chromium; fi
   fi
+  on ANTIGRAVITY && antigravity_ide_install
   on NEOVIM && tar_app_install NEOVIM nvim "bin/nvim"
   on JETBRAINS_TOOLBOX && tar_app_install JETBRAINS_TOOLBOX jetbrains-toolbox "bin/jetbrains-toolbox"
   on BCOMPARE && deb_install BCOMPARE bcompare
+  return 0
+}
+
+# antigravity_ide_install — Antigravity IDE 2.x: Google ships it for Linux as a
+# tarball only (the apt repository stays on the old 1.x line). In /opt, with
+# `antigravity-ide` on the PATH, a menu entry and the handler for its
+# antigravity-ide:// links (browser sign-in).
+antigravity_ide_install() {
+  local dir; dir="/opt/antigravity-ide-$(ver ANTIGRAVITY_VERSION)"
+  tar_app_install ANTIGRAVITY antigravity-ide "bin/antigravity-ide"
+  [[ "$DRY_RUN" == 1 ]] && return 0
+  # Electron's sandbox helper has to be root-owned and setuid.
+  chown root:root "$dir/chrome-sandbox"; chmod 4755 "$dir/chrome-sandbox"
+  atomic_write /usr/local/share/icons/hicolor/512x512/apps/antigravity-ide.png 0644 \
+    <"$dir/resources/app/resources/linux/code.png"
+  render antigravity-ide.desktop | atomic_write /usr/local/share/applications/antigravity-ide.desktop 0644
+  render antigravity-ide-url-handler.desktop \
+    | atomic_write /usr/local/share/applications/antigravity-ide-url-handler.desktop 0644
+  if (( CHANGED )); then run update-desktop-database -q /usr/local/share/applications; fi
   return 0
 }
 
@@ -41,7 +60,7 @@ tar_app_install() {
   fi
   file="$(fetch "$key")"
   run rm -rf "$dir"; run install -d -m 0755 "$dir"
-  run tar -xf "$file" -C "$dir" --strip-components=1
+  run tar -xf "$file" -C "$dir" --strip-components=1 --no-same-owner
   run ln -sfn "$dir/$bin" "/usr/local/bin/$name"
   local old
   for old in /opt/"$name"-*; do [[ "$old" == "$dir" || ! -d "$old" ]] || run rm -rf "$old"; done

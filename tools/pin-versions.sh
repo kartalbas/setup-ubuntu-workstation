@@ -10,6 +10,22 @@
 set -euo pipefail
 
 say() { printf '%s\n' "$*"; }
+# --check: newest versions only (no downloads, no GitHub API), for `update`.
+# --only KEY...: just these entries, for recording a chosen update.
+CHECK=0 ONLY=""
+while (( $# )); do
+  case "$1" in
+    --check) CHECK=1 ;;
+    --only) shift; ONLY=" $* "; break ;;
+    *) printf 'usage: %s [--check] [--only KEY...]\n' "$0" >&2; exit 2 ;;
+  esac
+  shift
+done
+want() { [[ -z "$ONLY" || "$ONLY" == *" $1 "* ]]; }
+# latest_tag REPO — the newest release's tag, from GitHub's redirect (no API).
+latest_tag() {
+  curl -fsSI -o /dev/null -w '%{redirect_url}' "https://github.com/$1/releases/latest" | sed -E 's#.*/tag/##'
+}
 # GitHub API: through gh when it is signed in (5000 requests an hour), else
 # anonymously (60 an hour, enough for one run).
 if gh auth status >/dev/null 2>&1; then api() { gh api "$1"; }
@@ -32,6 +48,13 @@ print(rel["tag_name"], a["browser_download_url"], d.split(":", 1)[1] if d.starts
 '
 gh_asset() {
   local key="$1" repo="$2" regex="$3" tag="${4:-}" json line
+  want "$key" || return 0
+  if (( CHECK )); then
+    [[ -n "$tag" ]] || tag="$(latest_tag "$repo")"
+    [[ -n "$tag" ]] || { err "$key: no release found for $repo"; exit 1; }
+    tag="${tag#rust-}"; say "${key}_VERSION=\"${tag#v}\""
+    return 0
+  fi
   if [[ -n "$tag" ]]; then json="$(api "repos/$repo/releases/tags/$tag")"
   else json="$(api "repos/$repo/releases/latest")"; fi
   line="$(python3 -c "$PICK_ASSET" "$regex" <<<"$json" 2>&1)" || { err "$key: $line"; exit 1; }
@@ -48,6 +71,8 @@ gh_asset() {
 # Any URL: KEY VERSION URL [SHA256] — hashes the download when no SHA given.
 url_pin() {
   local key="$1" ver="$2" url="$3" sha="${4:-}"
+  want "$key" || return 0
+  (( CHECK )) && { say "${key}_VERSION=\"$ver\""; return 0; }
   [[ -n "$sha" ]] || sha="$(curl -fsSL "$url" | sha256sum | cut -d' ' -f1)"
   say "${key}_VERSION=\"$ver\""
   say "${key}_URL=\"$url\""
@@ -74,20 +99,35 @@ gh_asset ZOXIDE ajeetdsouza/zoxide '^zoxide_[0-9.]+-1_amd64\.deb$'
 for f in CascadiaCode CascadiaMono FiraCode JetBrainsMono; do
   gh_asset "NERDFONT_$(tr '[:lower:]' '[:upper:]' <<<"$f")" ryanoasis/nerd-fonts "^${f}\.tar\.xz\$"
 done
+if want QUAKE_TERMINAL; then
 # Quake Terminal (GNOME extension): newest release for GNOME 50 on EGO.
 qt="$(curl -fsSL 'https://extensions.gnome.org/extension-info/?uuid=quake-terminal@diegodario88.github.io&shell_version=50')"
 read -r qt_pk qt_ver < <(python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["version_tag"], d.get("version_name") or d["version"])' <<<"$qt")
 url_pin QUAKE_TERMINAL "$qt_ver" "https://extensions.gnome.org/download-extension/quake-terminal@diegodario88.github.io.shell-extension.zip?version_tag=$qt_pk"
+fi
 
 say "# ---- B. Editors and IDEs"
 gh_asset NEOVIM neovim/neovim '^nvim-linux-x86_64\.tar\.gz$'
+if want JETBRAINS_TOOLBOX; then
 tb="$(curl -fsSL 'https://data.services.jetbrains.com/products/releases?code=TBA&latest=true&type=release')"
 read -r tb_ver tb_url tb_sumurl < <(python3 -c 'import json,sys; r=json.load(sys.stdin)["TBA"][0]; l=r["downloads"]["linux"]; print(r["version"], l["link"], l["checksumLink"])' <<<"$tb")
 url_pin JETBRAINS_TOOLBOX "$tb_ver" "$tb_url" "$(curl -fsSL "$tb_sumurl" | cut -d' ' -f1)"
+fi
+if want BCOMPARE; then
 bc="$(curl -fsSL 'https://www.scootersoftware.com/checkupdates.php?product=bc5&minor=0&maint=0&build=1&platform=linux&edition=pro&lang=silent')"
 bc_ver="$(grep -oE 'latestversion="[^"]+' <<<"$bc" | cut -d'"' -f2 | sed 's/ build /./')"
 bc_build="$(grep -oE 'latestbuild="[0-9]+' <<<"$bc" | cut -d'"' -f2)"
 url_pin BCOMPARE "$bc_ver" "https://www.scootersoftware.com/files/bcompare-${bc_ver%.*}.${bc_build}_amd64.deb"
+fi
+
+say "# Antigravity IDE 2.x: Google ships it for Linux as a tarball only (its apt"
+say "# repository stays on the old 1.x line); newest one from the download page."
+if want ANTIGRAVITY; then
+  ag_url="$(curl -fsSL --compressed https://antigravity.google/download \
+    | grep -oE 'https://[^"'"'"' <>]*/stable/[0-9.]+-[0-9]+/linux-x64/Antigravity%20IDE\.tar\.gz' | head -1)"
+  [[ -n "$ag_url" ]] || { err "ANTIGRAVITY: no Linux tarball on antigravity.google/download"; exit 1; }
+  url_pin ANTIGRAVITY "$(sed -E 's#.*/stable/([0-9.]+)-[0-9]+/.*#\1#' <<<"$ag_url")" "$ag_url"
+fi
 
 say "# ---- C. AI coding agents (Claude Code: apt; agy and Muse: vendor installers)"
 gh_asset CODEX openai/codex '^codex-x86_64-unknown-linux-musl\.tar\.gz$'
@@ -106,21 +146,28 @@ gh_asset FZF junegunn/fzf '^fzf-[0-9.]+-linux_amd64\.tar\.gz$'
 gh_asset BAT sharkdp/bat '^bat_[0-9.]+_amd64\.deb$'
 
 say "# ---- F. Languages"
-nvm_tag="$(api repos/nvm-sh/nvm/releases/latest | python3 -c 'import json,sys; print(json.load(sys.stdin)["tag_name"])')"
+if want NVM; then
+nvm_tag="$(latest_tag nvm-sh/nvm)"
 url_pin NVM "${nvm_tag#v}" "https://raw.githubusercontent.com/nvm-sh/nvm/$nvm_tag/install.sh"
+fi
 gh_asset UV astral-sh/uv '^uv-x86_64-unknown-linux-gnu\.tar\.gz$'
+if want GO; then
 read -r go_ver go_sha < <(curl -fsSL 'https://go.dev/dl/?mode=json' | python3 -c '
 import json, sys
 r = json.load(sys.stdin)[0]
 f = [x for x in r["files"] if x["os"] == "linux" and x["arch"] == "amd64" and x["kind"] == "archive"][0]
 print(r["version"][2:], f["sha256"])')
 url_pin GO "$go_ver" "https://go.dev/dl/go${go_ver}.linux-amd64.tar.gz" "$go_sha"
+fi
+if want MAVEN; then
 mvn_ver="$(curl -fsSL https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml | grep -oE '<version>3\.[0-9]+\.[0-9]+</version>' | tail -1 | grep -oE '3\.[0-9.]+[0-9]')"
 mvn_url="https://dlcdn.apache.org/maven/maven-3/${mvn_ver}/binaries/apache-maven-${mvn_ver}-bin.tar.gz"
 say "MAVEN_VERSION=\"$mvn_ver\""
 say "MAVEN_URL=\"$mvn_url\""
 say "MAVEN_SHA512=\"$(curl -fsSL "https://downloads.apache.org/maven/maven-3/${mvn_ver}/binaries/apache-maven-${mvn_ver}-bin.tar.gz.sha512" | cut -d' ' -f1)\""
 say ""
+fi
+if want FLUTTER; then
 read -r fl_ver fl_arch fl_sha < <(curl -fsSL https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
@@ -128,6 +175,8 @@ h = d["current_release"]["stable"]
 r = [x for x in d["releases"] if x["hash"] == h][0]
 print(r["version"], r["archive"], r["sha256"])')
 url_pin FLUTTER "$fl_ver" "https://storage.googleapis.com/flutter_infra_release/releases/$fl_arch" "$fl_sha"
+fi
+if want ANDROID_CMDLINE_TOOLS; then
 read -r at_rev at_file < <(curl -fsSL https://dl.google.com/android/repository/repository2-3.xml | python3 -c '
 import re, sys
 x = sys.stdin.read()
@@ -141,16 +190,21 @@ for m in re.finditer(r"<remotePackage path=\"cmdline-tools;([0-9.]+)\">(.*?)</re
         best = (ver, f.group(1))
 print(*best)')
 url_pin ANDROID_CMDLINE_TOOLS "$at_rev" "https://dl.google.com/android/repository/$at_file"
+fi
+if want RUSTUP; then
 rs_ver="$(curl -fsSL https://static.rust-lang.org/rustup/release-stable.toml | sed -nE "s/^version = ['\"]([^'\"]+)['\"].*/\\1/p")"
 url_pin RUSTUP "$rs_ver" "https://static.rust-lang.org/rustup/archive/$rs_ver/x86_64-unknown-linux-gnu/rustup-init" \
   "$(curl -fsSL "https://static.rust-lang.org/rustup/archive/$rs_ver/x86_64-unknown-linux-gnu/rustup-init.sha256" | cut -d' ' -f1)"
+fi
 
 say "# ---- G. Database clients"
 gh_asset MONGOSH mongodb-js/mongosh '^mongodb-mongosh_[0-9.]+_amd64\.deb$'
 
 say "# ---- H. Kubernetes and CI/CD"
-say "KUBECTL_MINOR=\"$(curl -fsSL https://dl.k8s.io/release/stable.txt | grep -oE '^v[0-9]+\.[0-9]+' | tr -d v)\""
-say ""
+if want KUBECTL; then
+  say "KUBECTL_MINOR=\"$(curl -fsSL https://dl.k8s.io/release/stable.txt | grep -oE '^v[0-9]+\.[0-9]+' | tr -d v)\""
+  say ""
+fi
 gh_asset KUBECTX ahmetb/kubectx '^kubectx_v[0-9.]+_linux_x86_64\.tar\.gz$'
 gh_asset KUBENS ahmetb/kubectx '^kubens_v[0-9.]+_linux_x86_64\.tar\.gz$'
 gh_asset KIND kubernetes-sigs/kind '^kind-linux-amd64$'

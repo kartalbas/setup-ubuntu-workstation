@@ -59,7 +59,7 @@ kitty_install() {
   else
     file="$(fetch KITTY)"
     run rm -rf "$dir"; run install -d -m 0755 "$dir"
-    run tar -xJf "$file" -C "$dir"
+    run tar -xJf "$file" -C "$dir" --no-same-owner
     run ln -sfn "$dir/bin/kitty" /usr/local/bin/kitty
     run ln -sfn "$dir/bin/kitten" /usr/local/bin/kitten
     for old in /opt/kitty-*; do [[ "$old" == "$dir" || ! -d "$old" ]] || run rm -rf "$old"; done

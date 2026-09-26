@@ -1,0 +1,11 @@
+[Desktop Entry]
+# Managed by setup-ubuntu-workstation: antigravity-ide:// links (browser sign-in)
+Name=Antigravity IDE - URL Handler
+Comment=Google Antigravity IDE
+Exec=/usr/local/bin/antigravity-ide --open-url %U
+Icon=antigravity-ide
+Type=Application
+NoDisplay=true
+StartupNotify=true
+Categories=Utility;TextEditor;Development;IDE;
+MimeType=x-scheme-handler/antigravity-ide;

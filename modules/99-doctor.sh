@@ -30,7 +30,7 @@ doctor() {
   _tool EDGE "Microsoft Edge" microsoft-edge --version
   _tool CHROMIUM "Chromium" "snap list chromium | tail -1 | awk '{print \"chromium\", \$2}'"
   _tool VSCODE "VS Code" "code --version | head -1"
-  _tool ANTIGRAVITY "Antigravity IDE" "dpkg-query -W -f='antigravity \${Version}' antigravity"
+  _tool ANTIGRAVITY "Antigravity IDE" "antigravity-ide --version >/dev/null && readlink -f /usr/local/bin/antigravity-ide | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1"
   _tool JETBRAINS_TOOLBOX "JetBrains Toolbox" "readlink -f /usr/local/bin/jetbrains-toolbox"
   _tool NEOVIM "Neovim" "nvim --version | head -1"
   _tool BCOMPARE "Beyond Compare" "dpkg-query -W -f='bcompare \${Version}' bcompare"
