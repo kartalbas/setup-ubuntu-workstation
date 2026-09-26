@@ -144,6 +144,7 @@ say "# ---- D. Git"
 gh_asset GIT_LFS git-lfs/git-lfs '^git-lfs-linux-amd64-v[0-9.]+\.tar\.gz$'
 gh_asset LAZYGIT jesseduffield/lazygit '^lazygit_[0-9.]+_linux_x86_64\.tar\.gz$'
 gh_asset DELTA dandavison/delta '^git-delta_[0-9.]+_amd64\.deb$'
+gh_asset GITLEAKS gitleaks/gitleaks '^gitleaks_[0-9.]+_linux_x64\.tar\.gz$'
 
 say "# ---- E. Command-line tools"
 gh_asset YQ mikefarah/yq '^yq_linux_amd64$'

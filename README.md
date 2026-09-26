@@ -201,6 +201,7 @@ again. Nothing is removed when switched off.
 | 21 | git-lfs | GitHub, pinned | ✓ |
 | 22 | lazygit | GitHub, pinned | ✓ |
 | 23 | delta | GitHub .deb, pinned | |
+| 77 | gitleaks — credential scan; ai-core's push gate runs it before a push | GitHub, pinned | ✓ |
 | **E** | **Command-line tools** | | |
 | 24-29 | jq · yq · ripgrep · fd · fzf · bat | Ubuntu / GitHub, pinned | ✓ |
 | 30-32 | 7-Zip · Midnight Commander · curl, wget, tree, htop, openssl, unzip | Ubuntu | ✓ |

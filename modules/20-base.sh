@@ -23,6 +23,7 @@ base_setup() {
     run git lfs install --system --skip-repo >/dev/null
   fi
   on LAZYGIT && bin_install LAZYGIT lazygit
+  on GITLEAKS && bin_install GITLEAKS gitleaks
   on DELTA && deb_install DELTA git-delta
   on YQ && bin_install YQ yq
   on RIPGREP && deb_install RIPGREP ripgrep

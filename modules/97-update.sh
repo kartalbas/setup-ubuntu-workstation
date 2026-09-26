@@ -24,6 +24,7 @@ declare -gA PIN_APPLY=(
   [BCOMPARE]="deb_install BCOMPARE bcompare"
   [CODEX]="bin_install CODEX codex codex-x86_64-unknown-linux-musl" [OPENCODE]="bin_install OPENCODE opencode"
   [GIT_LFS]="bin_install GIT_LFS git-lfs" [LAZYGIT]="bin_install LAZYGIT lazygit"
+  [GITLEAKS]="bin_install GITLEAKS gitleaks"
   [DELTA]="deb_install DELTA git-delta" [YQ]="bin_install YQ yq" [RIPGREP]="deb_install RIPGREP ripgrep"
   [FD]="deb_install FD fd" [FZF]="bin_install FZF fzf" [BAT]="deb_install BAT bat"
   [NVM]="node_setup" [UV]="python_setup" [GO]="go_setup" [MAVEN]="maven_setup"
