@@ -226,7 +226,7 @@ installed_version() { dpkg-query -W -f='${Version}' "$1" 2>/dev/null || true; }
 # ---- apt -----------------------------------------------------------------------
 APT_UPDATED=0
 MANAGED_MARK="Managed by setup-ubuntu-workstation"   # first line of our apt sources
-apt_update() { if (( ! APT_UPDATED )); then run apt-get update -q; APT_UPDATED=1; fi; }
+apt_update() { if (( ! APT_UPDATED )); then run apt-get update -qq; APT_UPDATED=1; fi; }
 apt_install() { # PKG... — install what is missing (Ubuntu archive or added repos)
   local missing=() p
   for p in "$@"; do

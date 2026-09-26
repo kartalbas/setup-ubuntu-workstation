@@ -27,6 +27,11 @@ repos_setup() {
     local k8s
     k8s="https://pkgs.k8s.io/core:/stable:/v$(ver KUBECTL_MINOR)/deb/"
     apt_repo kubernetes "$k8s" "/" "" "${k8s}Release.key" "$FPR_K8S"
+    # Google's cloud-sdk repository has a "kubectl" as well (a gcloud dispatcher
+    # of an older kubectl) whose version epoch (1:586…) would win otherwise.
+    printf '%s\n' "# Managed by setup-ubuntu-workstation: kubectl from Kubernetes' own repository." \
+      "Package: kubectl" "Pin: origin pkgs.k8s.io" "Pin-Priority: 1001" \
+      | atomic_write /etc/apt/preferences.d/setup-ubuntu-workstation-kubectl 0644
   fi
   on HELM && apt_repo helm "https://packages.buildkite.com/helm-linux/helm-debian/any/" any main \
     "https://packages.buildkite.com/helm-linux/helm-debian/gpgkey" "$FPR_HELM"

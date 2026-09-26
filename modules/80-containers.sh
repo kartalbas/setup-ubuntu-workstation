@@ -11,6 +11,10 @@ containers_setup() {
   on KUBECTL && pkgs+=(kubectl)
   on HELM && pkgs+=(helm)
   if (( ${#pkgs[@]} )); then apt_install "${pkgs[@]}"; apt_upgrade_pkgs "${pkgs[@]}"; fi
+  # Once: replace Google's kubectl dispatcher by Kubernetes' own kubectl.
+  if on KUBECTL && [[ "$(installed_version kubectl)" == 1:* ]]; then
+    DEBIAN_FRONTEND=noninteractive run apt-get install -y -q --allow-downgrades kubectl
+  fi
   on KIND && bin_install KIND kind
   on K9S && deb_install K9S k9s
   if on KUBECTX; then bin_install KUBECTX kubectx; bin_install KUBENS kubens; fi

@@ -127,7 +127,7 @@ _updates_apt() {
 }
 
 _updates_pinned() {
-  local tmp line p k key
+  local tmp line p k key label
   tmp="$(mktemp)"
   log_info "Looking up the newest versions (a minute or two)…"
   if ! as_user bash "$REPO_ROOT/tools/pin-versions.sh" >"$tmp" 2>"$tmp.err"; then
@@ -139,7 +139,8 @@ _updates_pinned() {
     [[ "$line" =~ ^([A-Z0-9_]+)_(VERSION|MINOR)= ]] || continue
     p="${BASH_REMATCH[1]}" k="${BASH_REMATCH[1]}_${BASH_REMATCH[2]}"
     key="${PIN_KEY[$p]:-$p}"; on "$key" || continue
-    _u_add "${p,,}" "${VER[$k]:-}" "${NEWV[$k]:-?}" pin "$p" "$(_flag _newer "${NEWV[$k]:-}" "${VER[$k]:-}")"
+    label="${p,,}"; label="${label//_/-}"; [[ "$p" == KUBECTL ]] && label="kubectl channel (pkgs.k8s.io)"
+    _u_add "$label" "${VER[$k]:-}" "${NEWV[$k]:-?}" pin "$p" "$(_flag _newer "${NEWV[$k]:-}" "${VER[$k]:-}")"
   done <"$REPO_ROOT/versions.conf"
 }
 
@@ -168,7 +169,7 @@ print(v[0] if v else "")' 2>/dev/null)"
     _u_add "agy" "$(user_out agy --version 2>/dev/null | head -1)" "(its installer)" agy - 0
   fi
   if on MUSE; then
-    _u_add "muse" "$(user_out muse --version 2>/dev/null | head -1)" "(updates itself)" muse - 0
+    _u_add "muse" "$(user_out muse --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)" "(updates itself)" muse - 0
   fi
 }
 
