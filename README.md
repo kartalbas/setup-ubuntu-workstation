@@ -46,6 +46,14 @@ and `llm2`, reads model and context size from each server and writes
 machine; the repository only has the template with placeholders
 (`templates/opencode.json`).
 
+**Claude Code on the same servers**: `claude-llm1`, `claude-llm2` (one
+`claude-<name>` per server in that file) start Claude Code with URL, token and
+model from it; `claude-llm --list` shows them. The server has to speak
+Anthropic's Messages API (llama-server does) and its chat template has to take
+a system message in the middle of a conversation, which Claude Code sends.
+Anthropic does not support other models in Claude Code: it works, but a Claude
+Code update may break it.
+
 ## The terminals
 
 Three terminals, each set up like Windows Terminal as far as it goes; tabs
@@ -165,6 +173,7 @@ again. Nothing is removed when switched off.
 | 67 | Chromium | snap (Canonical) | ✓ |
 | 11 | VS Code | Microsoft apt repo | ✓ |
 | 12 | Antigravity IDE 2.x (the apt repository only has the old 1.x) | Google tarball, pinned | ✓ |
+| 73 | Antigravity 2.0, the agent manager (`antigravity-hub`) | Google tarball, pinned | ✓ |
 | 13 | JetBrains Toolbox (in `~/.local/share/JetBrains/Toolbox`, updates itself) | JetBrains, pinned first version | ✓ |
 | 14 | Neovim, Vim | GitHub tarball, pinned / Ubuntu | ✓ |
 | 15 | Beyond Compare (licence needed) | vendor .deb, pinned | ✓ |
@@ -174,6 +183,7 @@ again. Nothing is removed when switched off.
 | 18 | Antigravity CLI (agy) | Google installer, ~/.local/bin | ✓ |
 | 68 | Muse Code (muse) | Meta installer, ~/.local/bin | ✓ |
 | 70 | OpenCode (opencode) | GitHub, pinned | ✓ |
+| 74 | `claude-<server>`: Claude Code on your own LLM servers (below) | this repo | ✓ |
 | **D** | **Git and GitHub** | | |
 | 19 | git | git-core PPA | ✓ |
 | 20 | GitHub CLI | GitHub apt repo | ✓ |

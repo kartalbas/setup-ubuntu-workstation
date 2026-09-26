@@ -32,6 +32,7 @@ doctor() {
   _tool CHROMIUM "Chromium" "snap list chromium | tail -1 | awk '{print \"chromium\", \$2}'"
   _tool VSCODE "VS Code" "code --version | head -1"
   _tool ANTIGRAVITY "Antigravity IDE" "antigravity-ide --version >/dev/null && readlink -f /usr/local/bin/antigravity-ide | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1"
+  _tool ANTIGRAVITY_HUB "Antigravity 2.0" "test -x /usr/local/bin/antigravity-hub && readlink -f /usr/local/bin/antigravity-hub | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1"
   _tool JETBRAINS_TOOLBOX "JetBrains Toolbox" "test -x ~/.local/share/JetBrains/Toolbox/bin/jetbrains-toolbox && cat ~/.local/share/JetBrains/Toolbox/bin/build.txt"
   _tool NEOVIM "Neovim" "nvim --version | head -1"
   _tool BCOMPARE "Beyond Compare" "dpkg-query -W -f='bcompare \${Version}' bcompare"
@@ -40,6 +41,7 @@ doctor() {
   _tool AGY "agy" agy --version
   _tool MUSE "Muse Code" muse --version
   _tool OPENCODE "OpenCode" opencode --version
+  _tool CLAUDE_LLM "Claude on your LLMs" "claude-llm --list | cut -d' ' -f1 | tr '\n' ' '"
   _tool GIT "git" git --version
   _tool GH "gh" "gh --version | head -1"
   _tool GIT_LFS "git-lfs" git lfs version

@@ -128,6 +128,13 @@ if want ANTIGRAVITY; then
   [[ -n "$ag_url" ]] || { err "ANTIGRAVITY: no Linux tarball on antigravity.google/download"; exit 1; }
   url_pin ANTIGRAVITY "$(sed -E 's#.*/stable/([0-9.]+)-[0-9]+/.*#\1#' <<<"$ag_url")" "$ag_url"
 fi
+say "# Antigravity 2.0 (the agent manager): a tarball as well, from the same page."
+if want ANTIGRAVITY_HUB; then
+  hub_url="$(curl -fsSL --compressed https://antigravity.google/download \
+    | grep -oE 'https://[^"'"'"' <>]*/antigravity-hub/[0-9.]+-[0-9]+/linux-x64/Antigravity\.tar\.gz' | head -1)"
+  [[ -n "$hub_url" ]] || { err "ANTIGRAVITY_HUB: no Linux tarball on antigravity.google/download"; exit 1; }
+  url_pin ANTIGRAVITY_HUB "$(sed -E 's#.*/antigravity-hub/([0-9.]+)-[0-9]+/.*#\1#' <<<"$hub_url")" "$hub_url"
+fi
 
 say "# ---- C. AI coding agents (Claude Code: apt; agy and Muse: vendor installers)"
 gh_asset CODEX openai/codex '^codex-x86_64-unknown-linux-musl\.tar\.gz$'

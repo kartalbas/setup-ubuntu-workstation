@@ -14,6 +14,7 @@ declare -gA PIN_KEY=(
 # How a pinned tool gets its version (the same calls install makes).
 declare -gA PIN_APPLY=(
   [KITTY]="kitty_install" [GHOSTTY]="deb_install GHOSTTY ghostty" [ANTIGRAVITY]="antigravity_ide_install"
+  [ANTIGRAVITY_HUB]="antigravity_hub_install"
   [PWSH]="deb_install PWSH powershell-lts" [STARSHIP]="bin_install STARSHIP starship"
   [ZOXIDE]="deb_install ZOXIDE zoxide" [QUAKE_TERMINAL]="quake_terminal_install"
   [NERDFONT_CASCADIACODE]="nerd_fonts_install" [NERDFONT_CASCADIAMONO]="nerd_fonts_install"

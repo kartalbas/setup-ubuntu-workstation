@@ -24,6 +24,7 @@ apps_setup() {
     else run snap install chromium; fi
   fi
   on ANTIGRAVITY && antigravity_ide_install
+  on ANTIGRAVITY_HUB && antigravity_hub_install
   on NEOVIM && tar_app_install NEOVIM nvim "bin/nvim"
   on JETBRAINS_TOOLBOX && jetbrains_toolbox_install
   on BCOMPARE && deb_install BCOMPARE bcompare
@@ -56,6 +57,22 @@ antigravity_ide_install() {
   render antigravity-ide.desktop | atomic_write /usr/local/share/applications/antigravity-ide.desktop 0644
   render antigravity-ide-url-handler.desktop \
     | atomic_write /usr/local/share/applications/antigravity-ide-url-handler.desktop 0644
+  if (( CHANGED )); then run update-desktop-database -q /usr/local/share/applications; fi
+  return 0
+}
+
+# antigravity_hub_install — Antigravity 2.0, Google's agent manager next to the
+# IDE, also a tarball only: in /opt/antigravity-hub-VERSION (not antigravity-*,
+# which would take the IDE's folders for old versions of it), `antigravity-hub`
+# on the PATH, a menu entry that also takes its antigravity:// links.
+antigravity_hub_install() {
+  local dir; dir="/opt/antigravity-hub-$(ver ANTIGRAVITY_HUB_VERSION)"
+  tar_app_install ANTIGRAVITY_HUB antigravity-hub antigravity
+  [[ "$DRY_RUN" == 1 ]] && return 0
+  chown root:root "$dir/chrome-sandbox"; chmod 4755 "$dir/chrome-sandbox"
+  python3 "$REPO_ROOT/tools/asar-file.py" "$dir/resources/app.asar" icon.png \
+    | atomic_write /usr/local/share/icons/hicolor/256x256/apps/antigravity-hub.png 0644
+  render antigravity-hub.desktop | atomic_write /usr/local/share/applications/antigravity-hub.desktop 0644
   if (( CHANGED )); then run update-desktop-database -q /usr/local/share/applications; fi
   return 0
 }

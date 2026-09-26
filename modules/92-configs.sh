@@ -55,6 +55,7 @@ configs_run() { # [save]
         cmp -s "$f" "$TARGET_HOME/$dst" || install -m "$perm" "$f" "$TARGET_HOME/$dst"
         log_ok "~/$dst"
       done
+      claude_llm_links
       log_info "config.conf is used by the next: sudo ./setup.sh install" ;;
     save)
       for entry in "${CONFIGS_FILES[@]}" "config.conf|$CONFIG_FILE|0644"; do

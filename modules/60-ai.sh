@@ -13,6 +13,10 @@ ai_setup() {
   fi
   on CODEX && bin_install CODEX codex codex-x86_64-unknown-linux-musl
   on OPENCODE && bin_install OPENCODE opencode
+  if on CLAUDE_LLM; then
+    atomic_write /usr/local/bin/claude-llm 0755 <"$REPO_ROOT/tools/claude-llm"
+    claude_llm_links
+  fi
   on AGY && vendor_installer "Antigravity CLI (agy)" "https://antigravity.google/cli/install.sh" agy
   on MUSE && vendor_installer "Muse Code (muse)" "https://dev.meta.ai/install.sh" muse
   return 0
@@ -35,6 +39,28 @@ opencode_llms() {
   printf '%s' "$lines" | python3 "$REPO_ROOT/tools/opencode-llms.py" \
     "$REPO_ROOT/templates/opencode.json" "$TARGET_HOME/.config/opencode/opencode.json"
   log_ok "OpenCode: llm1 and llm2 in ~/.config/opencode/opencode.json (only on this machine)"
+  claude_llm_links
+}
+
+# claude_llm_links — claude-<name> in ~/.local/bin for every server in
+# OpenCode's config (see tools/claude-llm); links to servers that are no
+# longer there go.
+claude_llm_links() {
+  local cfg="$TARGET_HOME/.config/opencode/opencode.json" bin="$TARGET_HOME/.local/bin" names name link
+  local -a list=()
+  on CLAUDE_LLM && [[ -x /usr/local/bin/claude-llm ]] || return 0
+  names="$(python3 -c 'import json, sys; print(" ".join(json.load(open(sys.argv[1])).get("provider", {})))' "$cfg" 2>/dev/null)" || names=""
+  read -ra list <<<"$names"
+  for link in "$bin"/claude-*; do
+    [[ -L "$link" && "$(readlink "$link")" == /usr/local/bin/claude-llm ]] || continue
+    [[ " $names " == *" ${link##*/claude-} "* ]] || as_user rm -f "$link"
+  done
+  for name in "${list[@]}"; do
+    [[ "$name" =~ ^[A-Za-z0-9._-]+$ && "$name" != llm ]] || continue
+    as_user mkdir -p "$bin"; as_user ln -sfn /usr/local/bin/claude-llm "$bin/claude-$name"
+  done
+  if (( ${#list[@]} )); then log_ok "Claude Code on your LLM servers: $(printf 'claude-%s ' "${list[@]}")"; fi
+  return 0
 }
 
 # Ubuntu 24.04+ keeps unprivileged programs from creating user namespaces;

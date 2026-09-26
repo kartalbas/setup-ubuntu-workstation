@@ -88,6 +88,9 @@ printf 'KITTY_VERSION="999.0"\nKITTY_URL="u"\nKITTY_SHA256="s"\nPWSH_VERSION="0.
 ( VERSIONS_LOCAL="$tmp/vl.conf"; ver_load; printf '%s %s' "$(ver KITTY_VERSION)" "$(ver PWSH_VERSION)" ) >"$tmp/vl.out"
 eq "versions.local.conf: newer wins, older is ignored" "$(cut -d' ' -f1 "$tmp/vl.out") $(grep -c '^PWSH_VERSION="0.1"' versions.conf)" "999.0 0"
 python3 -m py_compile templates/nautilus-open-in.py && ok "Files app extension compiles" || bad "Files app extension does not compile"
+for t in tools/claude-llm tools/asar-file.py; do
+  python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$t" && ok "$t parses" || bad "$t does not parse"
+done
 X="a&b"; mkdir -p "$tmp/templates"; printf '@X@' >"$tmp/templates/t"
 eq "render keeps & literal" "$(REPO_ROOT="$tmp" render t)" "a&b"
 ( unset KITTY_SHELL; render kitty.conf ) >/dev/null 2>&1 && bad "missing value accepted" || ok "render fails on a missing value"
