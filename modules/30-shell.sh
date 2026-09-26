@@ -36,6 +36,8 @@ bash_block() {
     on KREW && echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"'
     on JETBRAINS_TOOLBOX && echo '[ -d "$HOME/.local/share/JetBrains/Toolbox/scripts" ] && export PATH="$HOME/.local/share/JetBrains/Toolbox/scripts:$PATH"'
     on ZOXIDE && echo 'command -v zoxide >/dev/null && eval "$(zoxide init bash)"'
+    # uv's Python for python3 in the shell; the desktop keeps the system's.
+    on PYTHON && echo '[ -x "$HOME/.local/bin/python" ] && alias python3=python'
     # Muse 1.4 cannot store its login in the keyring on Linux yet
     # (github.com/meta-models/muse-code-sdk/issues/38): use its file store.
     on MUSE && echo 'export TBH_CREDENTIAL_BACKEND=file'

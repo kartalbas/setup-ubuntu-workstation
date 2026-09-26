@@ -57,7 +57,8 @@ doctor() {
   _tool MC "Midnight Commander" "mc --version | head -1"
   _tool NODE "Node.js (nvm)" '. ~/.nvm/nvm.sh && echo "$(node --version), default $(nvm version default)"'
   _tool YARN_PNPM "yarn / pnpm" '. ~/.nvm/nvm.sh && echo "yarn $(yarn --version) · pnpm $(pnpm --version)"'
-  _tool PYTHON "Python (uv)" 'echo "$(python3 --version) · uv $(uv --version | cut -d" " -f2)"'
+  # uv's python3 in ~/.local/bin would hide the system Python from the desktop
+  _tool PYTHON "Python (uv)" '[ ! -e ~/.local/bin/python3 ] && echo "$(python --version) · uv $(uv --version | cut -d" " -f2)"'
   _tool GO "Go" /usr/local/go/bin/go version
   _tool JAVA "Java" "java -version 2>&1 | head -1"
   _tool MAVEN "Maven" "mvn -version | head -1"

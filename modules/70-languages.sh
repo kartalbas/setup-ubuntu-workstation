@@ -50,7 +50,13 @@ python_setup() {
   bin_install UV uvx uvx
   as_user uv python install --default --preview-features python-install-default >/dev/null 2>&1 \
     || as_user uv python install --default >/dev/null
-  log_ok "$(as_user_sh 'python3 --version 2>/dev/null || true') via uv (\`python\`/\`python3\` in ~/.local/bin)"
+  # Not uv's python3 in ~/.local/bin: programs that embed Python (the Files
+  # app's extensions, gvfs) find their home through `python3` on the desktop
+  # session's PATH and would then miss the system's modules. `python` stays
+  # uv's; the shells call it for python3 too (alias).
+  local link="$TARGET_HOME/.local/bin/python3"
+  if [[ -L "$link" && "$(readlink "$link")" == "$TARGET_HOME/.local/share/uv/"* ]]; then run rm -f "$link"; fi
+  log_ok "$(as_user_sh 'python --version 2>/dev/null || true') via uv (\`python\` in ~/.local/bin, \`python3\` in your shells)"
 }
 
 # ---- Go --------------------------------------------------------------------------------

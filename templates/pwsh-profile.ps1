@@ -68,6 +68,8 @@ function which([string] $Name) {
 foreach ($pair in @(('vim', 'nvim'), ('cat', 'bat'), ('grep', 'rg'), ('find', 'fd'))) {
     if (Get-Command $pair[1] -CommandType Application -ErrorAction SilentlyContinue) { Set-Alias $pair[0] $pair[1] }
 }
+# uv's Python for python3 in the shell; the desktop keeps the system's.
+if (Test-Path "$HOME/.local/bin/python") { Set-Alias python3 "$HOME/.local/bin/python" }
 
 if (Get-Command zoxide -ErrorAction SilentlyContinue) { Invoke-Expression (& { (zoxide init powershell | Out-String) }) }
 # Muse 1.4 cannot store its login in the keyring on Linux yet
