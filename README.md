@@ -101,6 +101,28 @@ copies with Ctrl+Shift+C.
 WezTerm and Contour, which earlier versions of this repository installed, are
 removed again by `install`.
 
+## Your own config repository
+
+Keep your settings in a private repository of your own and put them on every
+machine with one command. Set it once: `sudo ./setup.sh config set
+CONFIGS_REPO OWNER/NAME`. It is cloned to `~/repos/<owner>/<name>`, and its
+folder `setup-ubuntu-workstation/` holds:
+
+| In the repository | Goes to |
+|---|---|
+| `config.conf` | `/etc/setup-ubuntu-workstation/config.conf` (with the next `sudo ./setup.sh install`) |
+| `kitty/local.conf`, `ghostty/local.conf` | `~/.config/kitty/`, `~/.config/ghostty/` |
+| `powershell/profile.local.ps1` | `~/.config/powershell/` |
+| `opencode/opencode.sops.json` (encrypted) | `~/.config/opencode/opencode.json` (0600) |
+| `hosts/<hostname>/…` | the same files, for that machine only |
+
+`./setup.sh configs` pulls the repository and puts the files in place;
+`./setup.sh configs save` copies yours back, encrypts the `*.sops.*` ones
+(sops + age, rules in the repository's `.sops.yaml`), commits and pushes.
+The age key lives in `~/.config/sops/age/keys.txt`; how it gets onto a new
+machine is up to the config repository (e.g. a copy locked with your
+passphrase).
+
 ## Where your settings live
 
 Nothing of this goes into git — the repository only has examples with
