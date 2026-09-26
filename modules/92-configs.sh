@@ -45,9 +45,9 @@ configs_run() { # [save]
   dir="$(configs_dir)" host="$(hostname -s)"
   log_step "Your settings: $repo"
   if [[ ! -d "$dir/.git" ]]; then run git clone -q "https://github.com/$repo.git" "$dir" || die "Could not clone $repo (signed in to GitHub? ./setup.sh login)"; fi
+  git -C "$dir" pull -q --ff-only 2>/dev/null || log_warn "$repo not updated (offline or local changes) — using it as it is"
   case "$mode" in
     apply)
-      git -C "$dir" pull -q --ff-only 2>/dev/null || log_warn "$repo not updated (offline or local changes) — using it as it is"
       for entry in "${CONFIGS_FILES[@]}"; do
         IFS='|' read -r src dst perm <<<"$entry"
         f="$(configs_source "$dir" "$src")"; [[ -f "$f" ]] || continue
