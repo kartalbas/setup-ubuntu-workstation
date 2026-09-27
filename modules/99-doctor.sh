@@ -27,6 +27,9 @@ doctor() {
   _tool STARSHIP "starship" starship --version
   _tool ZOXIDE "zoxide" zoxide --version
   _tool CASCADIA "Cascadia fonts" "fc-list | grep -c 'Cascadia Mono' | sed 's/\$/ font files/'"
+  _tool CASCADIA "Cascadia hinting" "fc-match -f '%{hintstyle}' 'Cascadia Mono' | grep -qx 3 && echo 'hintfull: its own hints, as on Windows'"
+  _tool GHOSTTY "Ghostty hinting" "grep -qx 'freetype-load-flags = no-autohint' ~/.config/ghostty/config.ghostty && echo 'no-autohint: its own hints, as on Windows'"
+  _tool PTYXIS "GTK hinting (Ptyxis)" "gsettings get org.gnome.desktop.interface font-rendering | grep -qx \"'manual'\" && gsettings get org.gnome.desktop.interface font-hinting | grep -qx \"'full'\" && echo 'manual, full: its own hints, as on Windows'"
   _tool NERD_FONTS "Nerd Fonts" "fc-list | grep -ci 'Nerd Font' | sed 's/\$/ font files/'"
   _tool CHROME "Google Chrome" google-chrome --version
   _tool EDGE "Microsoft Edge" microsoft-edge --version

@@ -2,6 +2,7 @@
 # modules/20-base.sh — git, fonts and the command-line tools (A8-9, D, E).
 
 NERD_FONT_DIR="/usr/local/share/fonts/nerd-fonts"
+CASCADIA_FONTCONFIG="/etc/fonts/conf.d/45-setup-ubuntu-workstation-cascadia.conf"
 
 base_setup() {
   log_step "Git, fonts and command-line tools"
@@ -31,6 +32,7 @@ base_setup() {
   on FZF && bin_install FZF fzf
   on BAT && deb_install BAT bat
   on NERD_FONTS && nerd_fonts_install
+  cascadia_hinting
   retired_tools_cleanup
   return 0
 }
@@ -55,6 +57,18 @@ retired_tools_cleanup() {
   for f in "$CACHE_DIR"/sops-*.deb "$CACHE_DIR"/age-*.tar.gz; do
     [[ -e "$f" ]] && run rm -f "$f"
   done
+  return 0
+}
+
+# cascadia_hinting — Cascadia placed by its own hints, as on Windows
+# (templates/fontconfig-cascadia.conf); kitty and every program that leaves
+# hinting to fontconfig draw it that way. Without CASCADIA the rule goes.
+cascadia_hinting() {
+  if on CASCADIA; then
+    render fontconfig-cascadia.conf | atomic_write "$CASCADIA_FONTCONFIG" 0644
+  elif [[ -f "$CASCADIA_FONTCONFIG" ]]; then
+    run rm -f "$CASCADIA_FONTCONFIG"
+  fi
   return 0
 }
 

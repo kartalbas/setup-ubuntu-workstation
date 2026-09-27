@@ -40,3 +40,11 @@ focus-tab-10=''
 move-tab-left=''
 move-tab-right=''
 close-window=''
+
+# Ptyxis draws with GTK's font settings, not fontconfig's, and GTK's automatic
+# mode hints lightly: FreeType's auto-hinter then rounds Cascadia's lower case
+# up a pixel (squeezed). Full hinting lets the font's own hints place it, as
+# Windows does. This applies to the text of every GTK application.
+[org/gnome/desktop/interface]
+font-rendering='manual'
+font-hinting='full'

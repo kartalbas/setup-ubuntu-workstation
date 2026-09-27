@@ -80,7 +80,12 @@ show the name of the current directory:
 | Ctrl+, | edit your own settings (`~/.config/kitty/local.conf`) |
 
 Windows Terminal's defaults as well: Cascadia Mono 12, the Campbell colours,
-bar cursor, 120×30, scrollbar, selecting does not copy. Not in kitty: mark mode
+bar cursor, 120×30, scrollbar, selecting does not copy. Cascadia is placed by
+the hints built into the font, as on Windows; Ubuntu's light hinting would
+round its lower case up a pixel and squeeze the text. For that the install
+adds a fontconfig rule (kitty and every program that leaves hinting to
+fontconfig), `freetype-load-flags = no-autohint` in Ghostty, and for Ptyxis
+GNOME's full hinting, which GTK uses for the text of every application. Not in kitty: mark mode
 (Ctrl+Shift+M), select all (Ctrl+Shift+A), a right-click menu on tabs. The
 window runs through XWayland, so GNOME draws its title bar: move, resize, snap
 and maximise like any other window.

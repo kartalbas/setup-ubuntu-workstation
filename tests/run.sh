@@ -87,7 +87,8 @@ eq "update knows how to apply every pinned tool" "${miss:-none}" "none"
 printf 'KITTY_VERSION="999.0"\nKITTY_URL="u"\nKITTY_SHA256="s"\nPWSH_VERSION="0.1"\n' >"$tmp/vl.conf"
 ( VERSIONS_LOCAL="$tmp/vl.conf"; ver_load; printf '%s %s' "$(ver KITTY_VERSION)" "$(ver PWSH_VERSION)" ) >"$tmp/vl.out"
 eq "versions.local.conf: newer wins, older is ignored" "$(cut -d' ' -f1 "$tmp/vl.out") $(grep -c '^PWSH_VERSION="0.1"' versions.conf)" "999.0 0"
-python3 -m py_compile templates/nautilus-open-in.py && ok "Files app extension compiles" || bad "Files app extension does not compile"
+python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' templates/nautilus-open-in.py \
+  && ok "Files app extension compiles" || bad "Files app extension does not compile"
 for t in tools/claude-llm tools/asar-file.py; do
   python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$t" && ok "$t parses" || bad "$t does not parse"
 done
