@@ -131,7 +131,7 @@ Delete / Shift+Delete, Alt+Left/Right/Up, Alt+Enter, Ctrl+Shift+N, Ctrl+F,
 and "Open in …" on right-click; "Copy as path" (right-click, Ctrl+Shift+C) puts
 the full path of the selection on the clipboard, one per line, without quotes.
 Folders open in it, Win+E opens it, and it
-takes the Files app's place in the dock (unless `DOCK` sets the dock). Unlike Explorer, Backspace goes up and F3 opens a
+takes the Files app's place in the dock on the first install (unless `DOCK` sets the dock). Unlike Explorer, Backspace goes up and F3 opens a
 second pane (fixed in Nemo). Nautilus stays installed: GNOME needs it for the
 desktop icons and file dialogs, and "Show in folder" from an application may
 still open it while it runs.
@@ -173,7 +173,7 @@ OWNER/NAME`. It is cloned to `~/repos/<owner>/<name>`, and its folder
 
 | In the repository | Goes to |
 |---|---|
-| `config.conf` (with `DOCK`, your dock) | `~/.config/setup-ubuntu-workstation/config.conf` |
+| `config.conf` (with `DOCK`, the dock of a new machine) | `~/.config/setup-ubuntu-workstation/config.conf` |
 | `kitty/local.conf`, `ghostty/local.conf` | `~/.config/kitty/`, `~/.config/ghostty/` |
 | `powershell/profile.local.ps1` | `~/.config/powershell/` |
 | `opencode/opencode.json` (URLs and tokens of your LLM servers) | `~/.config/opencode/opencode.json` (0600) |
@@ -185,8 +185,10 @@ OWNER/NAME`. It is cloned to `~/repos/<owner>/<name>`, and its folder
 `./setup.sh configs` pulls the repository and puts the files in place, and
 `./setup.sh install` does the same first (so its `config.conf` counts);
 `./setup.sh configs save` copies yours back (from `~/.ssh` only `id_*` and
-`config`, never `authorized_keys` or `known_hosts`; the dock as it is into
-`DOCK`), commits and pushes. A new machine then needs: `./setup.sh config set
+`config`, never `authorized_keys` or `known_hosts`), commits and pushes.
+`DOCK` sets the dock of a new machine (also when it only comes with the second
+install, the first with your config repository); once you arrange the dock
+yourself it is yours: install, doctor and `configs save` leave it alone. A new machine then needs: `./setup.sh config set
 CONFIGS_REPO OWNER/NAME`, `sudo ./setup.sh system`, `./setup.sh install`,
 the sign-ins, `./setup.sh install` once more (now with your config). The files are kept
 as they are, tokens and private keys included — keep the repository private.
@@ -294,7 +296,7 @@ Nothing is removed when switched off.
 | **J** | **Setup** | | |
 | 64 | git identity (`GIT_USER_NAME`/`EMAIL` or asked) | | ✓ |
 | 65 | sign-ins: gh (+ git credentials), Claude Code, Codex, agy, Muse | | ✓ |
-| – | `DOCK`: the dock on a new machine (desktop entry ids) | your config | |
+| – | `DOCK`: the dock of the first install (desktop entry ids); after that it is yours | your config | |
 
 ## Maintenance
 

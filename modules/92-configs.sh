@@ -8,7 +8,7 @@
 # keys (and ssh config) for ~/.ssh; nemo/ Nemo's settings, action menu and
 # bookmarks.
 #   ./setup.sh configs         pull the repository, put your files in place
-#   ./setup.sh configs save    copy your files back (and the dock into DOCK), commit, push
+#   ./setup.sh configs save    copy your files back, commit, push
 
 # path in the repository | path in your home | mode
 CONFIGS_FILES=(
@@ -126,9 +126,6 @@ configs_run() { # [apply|save] [soft]
       configs_ssh apply "$dir"
       claude_llm_links ;;
     save)
-      # The dock as it is now, for the next machine (DOCK in config.conf).
-      local dock; dock="$(dock_current)"
-      [[ -z "$dock" || "$dock" == "$(cfg_get DOCK)" ]] || cfg_set DOCK "$dock"
       for entry in "${CONFIGS_FILES[@]}" "config.conf|$CONFIG_FILE|0644"; do
         IFS='|' read -r src dst perm <<<"$entry"; [[ "$dst" == /* ]] || dst="$TARGET_HOME/$dst"
         [[ -f "$dst" ]] || continue

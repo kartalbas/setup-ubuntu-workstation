@@ -130,6 +130,21 @@ printf "[org/x]\nkept='a'\nnew='b'\n" | dconf_user_defaults 2>/dev/null
 eq "GNOME settings: only what the user has not set is written" "$(cat "$tmp/dconf.log")" "write /org/x/new 'b'"
 : >"$tmp/dconf.log"; CFG[DOCK]="a.desktop b.desktop"; dock_setup 2>/dev/null
 eq "DOCK becomes the dock's list" "$(cat "$tmp/dconf.log")" "write /org/gnome/shell/favorite-apps ['a.desktop', 'b.desktop']"
+# shellcheck disable=SC2329
+dconf_user_set() { [[ "$1" == /org/gnome/shell/favorite-apps ]] && printf '%s' "$FAVS"; return 0; }
+FAVS="['b.desktop', 'a.desktop']"; : >"$tmp/dconf.log"; CFG[DOCK]="a.desktop c.desktop"; dock_setup 2>/dev/null
+eq "a dock you arranged yourself is left alone" "$(cat "$tmp/dconf.log")" ""
+FAVS="['a.desktop', 'b.desktop']"; : >"$tmp/dconf.log"; dock_setup 2>/dev/null
+eq "the dock this setup wrote still takes DOCK" "$(cat "$tmp/dconf.log")" "write /org/gnome/shell/favorite-apps ['a.desktop', 'c.desktop']"
+mkdir -p "$tmp/fakebin"; printf '#!/bin/sh\necho "$FAKE_FAVS"\n' >"$tmp/fakebin/dconf"; chmod +x "$tmp/fakebin/dconf"
+rm -f "$STATE_DIR/dock"; : >"$tmp/dconf.log"; CFG[DOCK]="" CFG[NEMO]=1 FAVS=""
+PATH="$tmp/fakebin:$PATH" FAKE_FAVS="['org.gnome.Nautilus.desktop', 'firefox.desktop']" dock_setup 2>/dev/null
+eq "new machine, first install (no config repository yet): Nemo for the Files app" "$(cat "$tmp/dconf.log")" "write /org/gnome/shell/favorite-apps ['nemo.desktop', 'firefox.desktop']"
+FAVS="['nemo.desktop', 'firefox.desktop']"; : >"$tmp/dconf.log"; CFG[DOCK]="a.desktop"; dock_setup 2>/dev/null
+eq "its second install, the first with DOCK, sets DOCK" "$(cat "$tmp/dconf.log")" "write /org/gnome/shell/favorite-apps ['a.desktop']"
+rm -f "$tmp/fakebin/dconf"
+# shellcheck disable=SC2329
+dconf_user_set() { [[ "$1" == /org/x/kept ]] && echo "'mine'"; return 0; }
 
 CFG[DEFAULT_TERMINAL]=ghostty CFG[KITTY]=1 CFG[GHOSTTY]=1; eq "DEFAULT_TERMINAL picks the terminal" "$(default_terminal_id)" "ghostty"
 CFG[GHOSTTY]=0; eq "an off DEFAULT_TERMINAL falls back to the first one on" "$(default_terminal_id)" "kitty"

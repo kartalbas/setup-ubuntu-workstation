@@ -71,15 +71,6 @@ _windows_keys() {
   (( ${#mine[@]} == 0 )) || log_info "$(printf '%-24s %s' "" "set by you, left as it is: ${mine[*]}")"
 }
 
-# _dock — with DOCK in the config: the dock has those entries.
-_dock() {
-  local want have
-  want="$(cfg_get DOCK)"; [[ -n "$want" ]] || return 0
-  have="$(dock_current)"
-  if [[ "$have" == "$want" ]]; then log_ok "$(printf '%-24s %s' "Dock" "as DOCK says ($(wc -w <<<"$want") entries)")"; _d_ok=$((_d_ok + 1))
-  else log_warn "$(printf '%-24s %s' "Dock" "differs from DOCK (yours stays; configs save takes it over)")"; fi
-}
-
 doctor() {
   log_step "Doctor ($TARGET_USER)"
   system_check
@@ -164,7 +155,6 @@ doctor() {
   _tool MKCERT "mkcert" mkcert --version
   _nemo_copy_path
   _windows_keys
-  _dock
   _ssh_keys
   echo >&2
   if (( _d_bad )); then log_warn "$_d_ok ok, $_d_bad missing or failing"; exit 1; fi

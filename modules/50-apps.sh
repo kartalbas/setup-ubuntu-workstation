@@ -184,28 +184,32 @@ nemo_accels() {
   atomic_write "$file" <"$tmp"; rm -f "$tmp"
 }
 
-# dock_setup — the dock's favourites: DOCK from the config (desktop entry ids
-# separated by spaces), where the user has not arranged the dock on this
-# machine yet. Without DOCK, Nemo takes the Files app's place in it.
+# dock_setup — the dock of a new machine: DOCK from the config (desktop entry
+# ids separated by spaces), or else GNOME's with Nemo in the Files app's
+# place. What it wrote is noted (STATE_DIR/dock), so the second install of a
+# new machine, the first with your config repository, still sets DOCK. Once
+# you have arranged the dock yourself it is yours: nothing here changes,
+# checks or saves it.
 dock_setup() {
-  local dock id list="" favs from="'org.gnome.Nautilus.desktop'" to="'nemo.desktop'"
+  local key=/org/gnome/shell/favorite-apps stamp="$STATE_DIR/dock" now want dock id list=""
+  local from="'org.gnome.Nautilus.desktop'" to="'nemo.desktop'"
+  now="$(dconf_user_set "$key")"
+  if [[ -n "$now" && "$now" != "$(cat "$stamp" 2>/dev/null)" ]]; then
+    log_ok "Dock: yours, left as it is"; return 0
+  fi
   dock="$(cfg_get DOCK)"
   if [[ -n "$dock" ]]; then
-    if [[ -n "$(dconf_user_set /org/gnome/shell/favorite-apps)" ]]; then
-      log_ok "Dock: arranged on this machine already, left as it is"; return 0
-    fi
     for id in $dock; do list+="${list:+, }'$id'"; done
-    user_dconf write /org/gnome/shell/favorite-apps "[$list]"
-    log_ok "Dock: $dock"
+    want="[$list]"
   elif on NEMO; then
-    favs="$(dconf read /org/gnome/shell/favorite-apps 2>/dev/null)" || return 0
-    [[ "$favs" == *"$from"* && "$favs" != *"$to"* ]] || return 0
-    user_dconf write /org/gnome/shell/favorite-apps "${favs//"$from"/"$to"}"
+    want="$(dconf read "$key" 2>/dev/null || true)"
+    [[ "$want" == *"$from"* && "$want" != *"$to"* ]] || return 0
+    want="${want//"$from"/"$to"}"
+  else
+    return 0
   fi
-  return 0
-}
-
-# dock_current — the dock's favourites now, as DOCK takes them (for configs save).
-dock_current() {
-  dconf read /org/gnome/shell/favorite-apps 2>/dev/null | tr -d "[],'" | xargs
+  [[ "$want" != "$now" ]] || return 0
+  user_dconf write "$key" "$want"
+  [[ "$DRY_RUN" == 1 ]] || { mkdir -p "$STATE_DIR"; printf '%s\n' "$want" >"$stamp"; }
+  log_ok "Dock: ${dock:-the default, with Nemo for the Files app}"
 }
