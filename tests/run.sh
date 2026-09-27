@@ -12,7 +12,9 @@ bad() { fail=$((fail + 1)); printf '  ✗ %s\n' "$1"; }
 eq()  { if [[ "$2" == "$3" ]]; then ok "$1"; else bad "$1: expected [$3], got [$2]"; fi; }
 
 echo "shellcheck"
-if shellcheck -x -s bash setup.sh lib/*.sh modules/*.sh tests/run.sh tools/*.sh templates/*.sh; then ok "clean"; else bad "findings above"; fi
+if ! command -v shellcheck >/dev/null; then bad "shellcheck is not installed (sudo apt install shellcheck)"
+elif shellcheck -x -s bash setup.sh lib/*.sh modules/*.sh tests/run.sh tools/*.sh templates/*.sh; then ok "clean"
+else bad "findings above"; fi
 
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 CONFIG_FILE="$tmp/config.conf"
