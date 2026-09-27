@@ -127,7 +127,9 @@ preferences stays. It has no splits and copies with Ctrl+Shift+C.
 the left, the details list (Name, Date modified, Type, Size) on the right,
 folders first, double-click opens, tabs with Ctrl+T/W and Ctrl+Tab, F2, F5,
 Delete / Shift+Delete, Alt+Left/Right/Up, Alt+Enter, Ctrl+Shift+N, Ctrl+F,
-and "Open in …" on right-click. Folders open in it, Win+E opens it, and it
+and "Open in …" on right-click; "Copy as path" (right-click, Ctrl+Shift+C) puts
+the full path of the selection on the clipboard, one per line, without quotes.
+Folders open in it, Win+E opens it, and it
 takes the Files app's place in the dock (unless `DOCK` sets the dock). Unlike Explorer, Backspace goes up and F3 opens a
 second pane (fixed in Nemo). Nautilus stays installed: GNOME needs it for the
 desktop icons and file dialogs, and "Show in folder" from an application may

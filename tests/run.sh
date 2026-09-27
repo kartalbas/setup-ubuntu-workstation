@@ -134,6 +134,22 @@ eq "DOCK becomes the dock's list" "$(cat "$tmp/dconf.log")" "write /org/gnome/sh
 CFG[DEFAULT_TERMINAL]=ghostty CFG[KITTY]=1 CFG[GHOSTTY]=1; eq "DEFAULT_TERMINAL picks the terminal" "$(default_terminal_id)" "ghostty"
 CFG[GHOSTTY]=0; eq "an off DEFAULT_TERMINAL falls back to the first one on" "$(default_terminal_id)" "kitty"
 
+echo "Nemo: Copy as path"
+mkdir -p "$tmp/fakebin"; printf '#!/bin/sh\ncat >"%s/clip"\n' "$tmp" >"$tmp/fakebin/wl-copy"; chmod +x "$tmp/fakebin/wl-copy"
+PATH="$tmp/fakebin:$PATH" sh templates/nemo-copy-path.sh "/home/u/My Files/a.txt" "/home/u/b"
+eq "paths as they are, one per line, no quotes, no trailing newline" "$(od -An -c "$tmp/clip" | tr -s ' ' | tr -d '\n')" " / h o m e / u / M y F i l e s / a . t x t \n / h o m e / u / b"
+L="$tmp/nemo/actions-tree.json" A=setup-ubuntu-workstation-copy-path.nemo_action
+python3 tools/nemo-action-accel.py "$L" "$A" "<Primary><Shift>c" >/dev/null
+eq "no layout yet: one with the shortcut" "$(python3 -c 'import json,sys; t=json.load(open(sys.argv[1]))["toplevel"]; print(len(t), t[0]["uuid"], t[0]["accelerator"])' "$L")" "1 $A <Primary><Shift>c"
+printf '{"toplevel": [{"uuid": "Mine", "type": "submenu", "user-label": "Mine", "children": [{"uuid": "%s", "type": "action", "accelerator": "<Primary>k"}]}, {"uuid": "other.nemo_action", "type": "action"}]}' "$A" >"$L"
+python3 tools/nemo-action-accel.py "$L" "$A" "<Primary><Shift>c" >/dev/null
+grep -q '<Primary>k' "$L" && ! grep -q 'Shift' "$L" && ok "the user's placement (and shortcut) stays" || bad "the user's layout was changed: $(cat "$L")"
+printf '{"toplevel": [{"uuid": "other.nemo_action", "type": "action"}]}' >"$L"
+python3 tools/nemo-action-accel.py "$L" "$A" "<Primary><Shift>c" >/dev/null
+eq "an existing layout keeps its entries, ours is added" "$(python3 -c 'import json,sys; print(" ".join(i["uuid"] for i in json.load(open(sys.argv[1]))["toplevel"]))' "$L")" "other.nemo_action $A"
+printf '{broken' >"$L"
+python3 tools/nemo-action-accel.py "$L" "$A" "<Primary><Shift>c" >/dev/null 2>&1 && bad "a broken layout was accepted" || eq "a broken layout is left alone" "$(cat "$L")" "{broken"
+
 echo "pwsh prompt"
 if P="$(command -v pwsh || command -v "$HOME/.local/bin/pwsh")"; then
   r="$tmp/prompt-repo"; git init -q -b main "$r"

@@ -34,6 +34,24 @@ _ssh_keys() {
   fi
 }
 
+# _nemo_copy_path — Nemo's "Copy as path": its script, wl-copy, its shortcut.
+_nemo_copy_path() {
+  on NEMO || return 0
+  local dir="$TARGET_HOME/$NEMO_ACTIONS_REL" accel
+  accel="$(python3 -c 'import json, sys
+def walk(items):
+    for i in items:
+        if i.get("uuid") == sys.argv[2]: return i.get("accelerator") or "-"
+        r = walk(i.get("children") or [])
+        if r: return r
+print(walk(json.load(open(sys.argv[1])).get("toplevel", [])) or "")' "$TARGET_HOME/.config/nemo/actions-tree.json" "$NEMO_COPY_PATH.nemo_action" 2>/dev/null)"
+  if [[ -x "$dir/$NEMO_COPY_PATH.sh" && -f "$dir/$NEMO_COPY_PATH.nemo_action" ]] && have wl-copy; then
+    log_ok "$(printf '%-24s %s' "Nemo: Copy as path" "right-click${accel:+, shortcut $accel}")"; _d_ok=$((_d_ok + 1))
+  else
+    log_err "$(printf '%-24s %s' "Nemo: Copy as path" "missing (./setup.sh install; wl-copy: sudo ./setup.sh system)")"; _d_bad=$((_d_bad + 1))
+  fi
+}
+
 # _dock — with DOCK in the config: the dock has those entries.
 _dock() {
   local want have
@@ -123,6 +141,7 @@ doctor() {
   _tool TERRAFORM "terraform" "terraform version | head -1"
   _tool VAULT "vault" "vault version"
   _tool MKCERT "mkcert" mkcert --version
+  _nemo_copy_path
   _dock
   _ssh_keys
   echo >&2

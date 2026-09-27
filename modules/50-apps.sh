@@ -79,8 +79,8 @@ files_open_in() {
 
 # nemo_setup — Nemo as the file manager, like Windows Explorer: the folder tree
 # on the left, the details list on the right (templates/dconf-nemo), Ctrl+Tab
-# between tabs, "Open in …" on right-click, folders open in it. Nautilus stays:
-# GNOME uses it for the desktop icons and file dialogs.
+# between tabs, "Open in …" and "Copy as path" on right-click, folders open in
+# it. Nautilus stays: GNOME uses it for the desktop icons and file dialogs.
 nemo_setup() {
   local key=/org/cinnamon/desktop/applications/terminal
   case "$(default_terminal_id)" in
@@ -97,7 +97,10 @@ nemo_setup() {
         user_dconf write "$key/exec" "'$NEMO_TERMINAL'"; user_dconf write "$key/exec-arg" "'$NEMO_TERMINAL_ARG'"
       fi ;;
   esac
+  NEMO_WANT=" "
   nemo_open_in
+  nemo_copy_path
+  nemo_actions_prune
   nemo_accels
   run xdg-mime default nemo.desktop inode/directory
   return 0
@@ -112,8 +115,9 @@ NEMO_OPEN_IN=(
   "VS Code|code|code %F|1"
   "Antigravity IDE|@BIN@/antigravity-ide|@BIN@/antigravity-ide %F|1"
 )
+NEMO_ACTIONS_REL=".local/share/nemo/actions"
 nemo_open_in() {
-  local dir="$TARGET_HOME/.local/share/nemo/actions" entry label program command files kind sel ext exec want=" " f
+  local dir="$TARGET_HOME/$NEMO_ACTIONS_REL" entry label program command files kind sel ext exec f
   for entry in "${NEMO_OPEN_IN[@]}"; do
     entry="${entry//@BIN@/$BIN_DIR}"
     IFS='|' read -r label program command files <<<"$entry"
@@ -123,13 +127,40 @@ nemo_open_in() {
         background) sel=none; ext='any;'; exec="${command//%F/%P}" ;;
         file)       [[ "$files" == 1 ]] || continue; sel=s; ext='nodirs;'; exec="$command" ;;
       esac
-      f="$dir/setup-ubuntu-workstation-${program##*/}-$kind.nemo_action"; want+="$f "
+      f="$dir/setup-ubuntu-workstation-${program##*/}-$kind.nemo_action"; NEMO_WANT+="$f "
       printf '[Nemo Action]\n# %s\nName=Open in %s\nComment=Open it in %s\nExec=%s\nQuote=double\nSelection=%s\nExtensions=%s\nDependencies=%s;\n' \
         "$MANAGED_MARK" "$label" "$label" "$exec" "$sel" "$ext" "$program" | atomic_write "$f"
     done
   done
-  for f in "$dir"/setup-ubuntu-workstation-*.nemo_action; do
-    [[ -e "$f" && "$want" != *" $f "* ]] && run rm -f "$f"
+  return 0
+}
+
+# nemo_copy_path — "Copy as path" on right-click and Ctrl+Shift+C: the full
+# path of every selected item to the clipboard, one per line, without quotes
+# (templates/nemo-copy-path.sh, wl-copy). The shortcut goes into Nemo's action
+# layout (~/.config/nemo/actions-tree.json) unless the action is there already.
+NEMO_COPY_PATH="setup-ubuntu-workstation-copy-path"
+nemo_copy_path() {
+  local dir="$TARGET_HOME/$NEMO_ACTIONS_REL" f added
+  render nemo-copy-path.sh | atomic_write "$dir/$NEMO_COPY_PATH.sh" 0755
+  f="$dir/$NEMO_COPY_PATH.nemo_action"; NEMO_WANT+="$f "
+  printf '[Nemo Action]\n# %s\nName=Copy as path\nComment=Copy the full path of the selection, one per line\nExec=<%s.sh %%F>\nSelection=notnone\nExtensions=any;\nDependencies=wl-copy;\n' \
+    "$MANAGED_MARK" "$NEMO_COPY_PATH" | atomic_write "$f"
+  [[ "$DRY_RUN" == 1 ]] && return 0
+  if added="$(python3 "$REPO_ROOT/tools/nemo-action-accel.py" "$TARGET_HOME/.config/nemo/actions-tree.json" \
+       "$NEMO_COPY_PATH.nemo_action" "<Primary><Shift>c")"; then
+    [[ -z "$added" ]] || log_ok "Nemo: Copy as path on Ctrl+Shift+C (it takes effect when Nemo starts again)"
+  else
+    log_warn "Nemo: ~/.config/nemo/actions-tree.json cannot be read — no shortcut for Copy as path"
+  fi
+  return 0
+}
+
+# nemo_actions_prune — actions this setup wrote earlier and no longer writes.
+nemo_actions_prune() {
+  local f
+  for f in "$TARGET_HOME/$NEMO_ACTIONS_REL"/setup-ubuntu-workstation-*.nemo_action; do
+    [[ -e "$f" && "$NEMO_WANT" != *" $f "* ]] && run rm -f "$f"
   done
   return 0
 }
