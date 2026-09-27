@@ -82,9 +82,21 @@ files_open_in() {
 # between tabs, "Open in …" on right-click, folders open in it. Nautilus stays:
 # GNOME uses it for the desktop icons and file dialogs.
 nemo_setup() {
-  NEMO_TERMINAL="x-terminal-emulator" NEMO_TERMINAL_ARG="-e"
-  if on KITTY; then NEMO_TERMINAL="$BIN_DIR/kitty"; elif on GHOSTTY; then NEMO_TERMINAL="ghostty"; fi
+  local key=/org/cinnamon/desktop/applications/terminal
+  case "$(default_terminal_id)" in
+    kitty)   NEMO_TERMINAL="$BIN_DIR/kitty" NEMO_TERMINAL_ARG="-e" ;;
+    ghostty) NEMO_TERMINAL="ghostty" NEMO_TERMINAL_ARG="-e" ;;
+    ptyxis)  NEMO_TERMINAL="ptyxis" NEMO_TERMINAL_ARG="--" ;;
+    *)       NEMO_TERMINAL="x-terminal-emulator" NEMO_TERMINAL_ARG="-e" ;;
+  esac
   render dconf-nemo | dconf_user_defaults
+  # Nemo's terminal follows DEFAULT_TERMINAL while it is one this setup chose.
+  case "$(dconf_user_set "$key/exec")" in
+    "'$BIN_DIR/kitty'"|"'ghostty'"|"'ptyxis'"|"'x-terminal-emulator'")
+      if [[ "$(dconf_user_set "$key/exec")" != "'$NEMO_TERMINAL'" ]]; then
+        user_dconf write "$key/exec" "'$NEMO_TERMINAL'"; user_dconf write "$key/exec-arg" "'$NEMO_TERMINAL_ARG'"
+      fi ;;
+  esac
   nemo_open_in
   nemo_accels
   run xdg-mime default nemo.desktop inode/directory

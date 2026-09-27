@@ -129,6 +129,9 @@ eq "GNOME settings: only what the user has not set is written" "$(cat "$tmp/dcon
 : >"$tmp/dconf.log"; CFG[DOCK]="a.desktop b.desktop"; dock_setup 2>/dev/null
 eq "DOCK becomes the dock's list" "$(cat "$tmp/dconf.log")" "write /org/gnome/shell/favorite-apps ['a.desktop', 'b.desktop']"
 
+CFG[DEFAULT_TERMINAL]=ghostty CFG[KITTY]=1 CFG[GHOSTTY]=1; eq "DEFAULT_TERMINAL picks the terminal" "$(default_terminal_id)" "ghostty"
+CFG[GHOSTTY]=0; eq "an off DEFAULT_TERMINAL falls back to the first one on" "$(default_terminal_id)" "kitty"
+
 echo
 echo "$pass passed, $fail failed"
 (( fail == 0 ))

@@ -7,6 +7,7 @@
 
 KITTY_DESKTOP="kitty.desktop"
 GHOSTTY_DESKTOP="com.mitchellh.ghostty.desktop"
+PTYXIS_DESKTOP="org.gnome.Ptyxis.desktop"
 QUAKE_UUID="quake-terminal@diegodario88.github.io"
 PTYXIS_PROFILE="c0d4fc4f89701dfeff383ce0c3a6d53b"   # the Bash profile added to Ptyxis
 
@@ -94,15 +95,28 @@ ptyxis_setup() {
   log_ok "Ptyxis (GNOME's terminal) set up, with bash"
 }
 
+# default_terminal_id — DEFAULT_TERMINAL when it is on, else the first of
+# kitty, Ghostty, Ptyxis that is: kitty | ghostty | ptyxis (empty: none).
+default_terminal_id() {
+  local want t; want="$(cfg_get DEFAULT_TERMINAL kitty)"
+  case "$want" in kitty|ghostty|ptyxis) ;; *) die "DEFAULT_TERMINAL must be kitty, ghostty or ptyxis" ;; esac
+  if on "${want^^}"; then echo "$want"; return 0; fi
+  for t in kitty ghostty ptyxis; do on "${t^^}" && { echo "$t"; return 0; }; done
+  return 0
+}
+# terminal_desktop ID — its desktop entry.
+terminal_desktop() {
+  case "$1" in kitty) echo "$KITTY_DESKTOP" ;; ghostty) echo "$GHOSTTY_DESKTOP" ;; ptyxis) echo "$PTYXIS_DESKTOP" ;; esac
+}
+
 # default_terminal — what Ctrl+Alt+T and "Open in Terminal" start (the
 # freedesktop xdg-terminal-exec list, ~/.config/xdg-terminals.list).
 default_terminal() {
-  local desktop=""
-  if on KITTY; then desktop="$KITTY_DESKTOP"
-  elif on GHOSTTY; then desktop="$GHOSTTY_DESKTOP"; fi
-  [[ -n "$desktop" ]] || return 0
-  printf '# %s: the default terminal.\n%s\n' "$MANAGED_MARK" "$desktop" \
+  local id; id="$(default_terminal_id)"
+  [[ -n "$id" ]] || return 0
+  printf '# %s: the default terminal (DEFAULT_TERMINAL).\n%s\n' "$MANAGED_MARK" "$(terminal_desktop "$id")" \
     | atomic_write "$TARGET_HOME/.config/xdg-terminals.list"
+  log_ok "Default terminal: $id"
 }
 
 # quake_terminal_install — GNOME Shell extension in the home, pinned; F12
@@ -119,6 +133,11 @@ quake_terminal_install() {
   fi
   QUAKE_APP_ID="$(grep -v '^#' "$TARGET_HOME/.config/xdg-terminals.list" 2>/dev/null | head -1)"
   render dconf-quake-terminal | dconf_user_defaults
+  # The terminal follows DEFAULT_TERMINAL while it is one this setup chose.
+  case "$(dconf_user_set /org/gnome/shell/extensions/quake-terminal/terminal-id)" in
+    "'$KITTY_DESKTOP'"|"'$GHOSTTY_DESKTOP'"|"'$PTYXIS_DESKTOP'")
+      user_dconf write /org/gnome/shell/extensions/quake-terminal/terminal-id "'$QUAKE_APP_ID'" ;;
+  esac
   exts="$(dconf read /org/gnome/shell/enabled-extensions 2>/dev/null || true)"
   if [[ "$exts" != *"'$QUAKE_UUID'"* ]]; then
     if [[ -z "$exts" || "$exts" == "@as []" ]]; then exts="['$QUAKE_UUID']"; else exts="${exts%]}, '$QUAKE_UUID']"; fi

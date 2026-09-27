@@ -69,10 +69,12 @@ Code update may break it.
 Three terminals, each set up like Windows Terminal as far as it goes; tabs
 show the name of the current directory:
 
-- **kitty**, the default (Ctrl+Alt+T, "Open in Terminal"), with **PowerShell 7**
-  — Windows Terminal's keys, mouse and tabs (below).
-- **Ghostty**, with PowerShell 7, to compare.
+- **kitty**, with **PowerShell 7** — Windows Terminal's keys, mouse and tabs (below).
+- **Ghostty**, with PowerShell 7.
 - **Terminal** (Ptyxis, Ubuntu's own), with **bash**.
+
+`DEFAULT_TERMINAL` (kitty, ghostty or ptyxis; kitty unless set) is the one
+Ctrl+Alt+T, "Open in Terminal" in Nemo and the F12 drop-down open.
 
 | Keys / mouse | Action |
 |---|---|
