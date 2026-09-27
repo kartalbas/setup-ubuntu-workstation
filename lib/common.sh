@@ -231,6 +231,10 @@ fetch() {
   url="$(ver "${key}_URL")"
   if [[ -n "${VER[${key}_SHA512]:-}" ]]; then algo=512; sum="${VER[${key}_SHA512]}"; else sum="$(ver "${key}_SHA256")"; fi
   file="$CACHE_DIR/${key,,}-$(ver "${key}_VERSION")-$(basename "${url%%\?*}")"
+  if [[ "$DRY_RUN" == 1 ]]; then
+    [[ -f "$file" ]] || printf '%s  ▶ download %s%s\n' "$C_DIM" "$url" "$C_RST" >&2
+    printf '%s' "$file"; return 0
+  fi
   mkdir -p "$CACHE_DIR"
   if [[ ! -f "$file" ]] || ! echo "$sum  $file" | "sha${algo}sum" -c --quiet - >/dev/null 2>&1; then
     run curl -fL --retry 3 --silent --show-error -o "$file.part" "$url" >&2
