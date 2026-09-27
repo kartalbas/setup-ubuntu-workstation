@@ -173,7 +173,7 @@ again. Nothing is removed when switched off.
 | **A** | **Terminal and shell** | | |
 | 1 | kitty (default terminal) | GitHub, pinned | ✓ |
 | 2 | Ghostty (to compare) | Ubuntu .deb (community), pinned | ✓ |
-| 69 | Terminal (Ptyxis) set up like Windows Terminal, with bash | Ubuntu | ✓ |
+| 69 | Terminal (Ptyxis) set up like Windows Terminal, with bash; GNOME full font hinting | Ubuntu | ✓ |
 | 72 | Files app: "Open in" kitty, Ghostty, Terminal (Ptyxis), VS Code, Antigravity IDE | this repo (nautilus-python) | ✓ |
 | 75 | Nemo as the file manager, like Windows Explorer (below) | Ubuntu | ✓ |
 | 3 | Quake Terminal: drop-down on F12 | GNOME extension, pinned | |
@@ -181,7 +181,7 @@ again. Nothing is removed when switched off.
 | 5 | pwsh profile | this repo | ✓ |
 | 6 | starship prompt | GitHub, pinned | ✓ |
 | 7 | zoxide | GitHub .deb, pinned | |
-| 8 | Cascadia Code / Mono | Ubuntu | ✓ |
+| 8 | Cascadia Code / Mono, drawn with their own hints as on Windows | Ubuntu | ✓ |
 | 9 | Nerd Fonts (Caskaydia, FiraCode, JetBrains Mono) | GitHub, pinned | ✓ |
 | **B** | **Browsers, editors, IDEs** | | |
 | 10 | Google Chrome | Google apt repo | ✓ |
