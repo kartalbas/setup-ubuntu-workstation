@@ -125,7 +125,8 @@ preferences stays. It has no splits and copies with Ctrl+Shift+C.
 
 **Nemo** is the file manager, set up like Windows Explorer: the folder tree on
 the left, the details list (Name, Date modified, Type, Size) on the right,
-folders first, double-click opens, tabs with Ctrl+T/W and Ctrl+Tab, F2, F5,
+folders first, double-click opens, sizes counted in 1024s (shown as KiB,
+MiB), tabs with Ctrl+T/W and Ctrl+Tab, F2, F5,
 Delete / Shift+Delete, Alt+Left/Right/Up, Alt+Enter, Ctrl+Shift+N, Ctrl+F,
 and "Open in …" on right-click; "Copy as path" (right-click, Ctrl+Shift+C) puts
 the full path of the selection on the clipboard, one per line, without quotes.
@@ -134,6 +135,34 @@ takes the Files app's place in the dock (unless `DOCK` sets the dock). Unlike Ex
 second pane (fixed in Nemo). Nautilus stays installed: GNOME needs it for the
 desktop icons and file dialogs, and "Show in folder" from an application may
 still open it while it runs.
+
+## The desktop
+
+GNOME gets the Windows keys it lacks (`WINDOWS_KEYS`), where you have not set
+the key yourself:
+
+| Keys | Action |
+|---|---|
+| Win+R | run a command (as Alt+F2) |
+| Ctrl+Esc | the overview with the search, as the Windows key alone |
+| Win+Shift+S | screenshot: an area, a window or the screen (as Print) |
+| Win+D | show the desktop (again: the windows come back) |
+| Alt+Tab · Win+Tab | switch windows · switch applications (GNOME: Alt+Tab switches applications) |
+| Win+I | Settings |
+| Ctrl+Shift+Esc | the task manager, Resources (a custom shortcut: Settings → Keyboard) |
+| Win+V | the clipboard history (`CLIPBOARD_HISTORY`, below); GNOME's notification list stays on Win+M |
+| Win+E, Win+L, Win+Arrows | open Nemo · lock · arrange windows (GNOME's own, except Win+E) |
+
+**Clipboard history** (`CLIPBOARD_HISTORY`): the GNOME extension Clipboard
+Indicator, pinned, from extensions.gnome.org. Win+V opens the list of what you
+copied; choose an entry and paste it with Ctrl+V. Its own shortcuts
+(Ctrl+F8…F12) are switched off: they would take those keys from every
+application. GNOME loads it at the next login; switched off in the Extensions
+app, it stays off.
+
+**New Document** (`NEW_DOCUMENTS`): right-click in a folder → New Document →
+"Text file" or "Markdown", in Nemo and the Files app (templates in
+`~/Templates`; add your own there).
 
 ## Your own config repository
 
@@ -148,6 +177,8 @@ OWNER/NAME`. It is cloned to `~/repos/<owner>/<name>`, and its folder
 | `kitty/local.conf`, `ghostty/local.conf` | `~/.config/kitty/`, `~/.config/ghostty/` |
 | `powershell/profile.local.ps1` | `~/.config/powershell/` |
 | `opencode/opencode.json` (URLs and tokens of your LLM servers) | `~/.config/opencode/opencode.json` (0600) |
+| `nemo/settings.ini` (Nemo's settings, without a window's size and place) | GNOME settings `/org/nemo/` |
+| `nemo/actions-tree.json` (Nemo's action menu and its shortcuts) · `nemo/bookmarks` (side pane; also the Files app's and the file dialogs') | `~/.config/nemo/`, `~/.config/gtk-3.0/bookmarks` |
 | `ssh/` (your SSH keys, `config`) | `~/.ssh/` (private keys 0600, `*.pub` 0644); a different file already there is left alone |
 | `hosts/<hostname>/…` | the same files, for that machine only |
 
@@ -172,7 +203,7 @@ placeholders (`config.example.conf`, `templates/opencode.json`).
 | OpenCode: your LLM servers with URL, token and name | `~/.config/opencode/opencode.json` | 600 |
 | SSH keys (from your config repository) | `~/.ssh/id_*` | 600 |
 | Your own terminal and shell settings (never overwritten) | `~/.config/kitty/local.conf`, `~/.config/ghostty/local.conf`, `~/.config/powershell/profile.local.ps1`, `~/.bashrc` outside the marked block | 644 |
-| GNOME settings (Ptyxis, Nemo, font hinting, dock): what this setup set and what you changed | `~/.config/dconf/user` | 664 |
+| GNOME settings (Ptyxis, Nemo, keys, clipboard history, font hinting, dock): what this setup set and what you changed | `~/.config/dconf/user` | 664 |
 | git name and e-mail | `~/.gitconfig` | 664 |
 | Sign-ins | gh `~/.config/gh/hosts.yml` (token in the keyring), Claude Code `~/.claude/.credentials.json`, Codex `~/.codex/auth.json`, Muse `~/.config/muse/auth.json`, agy in the GNOME keyring (`~/.local/share/keyrings/`) | 600 |
 
@@ -189,13 +220,16 @@ Nothing is removed when switched off.
 
 | Nr | Tool | Source | On |
 |---|---|---|---|
-| **A** | **Terminal and shell** | | |
+| **A** | **Terminal, shell and desktop** | | |
 | 1 | kitty (default terminal) | GitHub, pinned, `~/.local/opt` | ✓ |
 | 2 | Ghostty (to compare) | Ubuntu .deb (community), pinned — *system* | ✓ |
 | 69 | Terminal (Ptyxis) set up like Windows Terminal, with bash; GNOME full font hinting | Ubuntu — *system* | ✓ |
 | 72 | Files app: "Open in" kitty, Ghostty, Terminal (Ptyxis), VS Code, Antigravity IDE | this repo (nautilus-python: *system*) | ✓ |
 | 75 | Nemo as the file manager, like Windows Explorer (below) | Ubuntu — *system* | ✓ |
 | 3 | Quake Terminal: drop-down on F12 | GNOME extension, pinned | |
+| 78 | Windows' keys: Win+R, Ctrl+Esc, Win+Shift+S, Win+D, Alt+Tab, Win+I, Ctrl+Shift+Esc (above) | this repo | ✓ |
+| 79 | Clipboard history on Win+V (Clipboard Indicator) | GNOME extension, pinned | ✓ |
+| 80 | New Document: text file, Markdown | this repo | ✓ |
 | 4 | PowerShell 7 | GitHub tarball, pinned, `~/.local/opt` | ✓ |
 | 5 | pwsh profile | this repo | ✓ |
 | 6 | starship prompt | GitHub, pinned | ✓ |

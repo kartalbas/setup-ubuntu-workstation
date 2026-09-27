@@ -150,6 +150,56 @@ eq "an existing layout keeps its entries, ours is added" "$(python3 -c 'import j
 printf '{broken' >"$L"
 python3 tools/nemo-action-accel.py "$L" "$A" "<Primary><Shift>c" >/dev/null 2>&1 && bad "a broken layout was accepted" || eq "a broken layout is left alone" "$(cat "$L")" "{broken"
 
+echo "Windows keys, clipboard history, New Document"
+TARGET_HOME="$tmp/u"; set_paths
+: >"$tmp/dconf.log"; windows_keys 2>/dev/null
+n=0
+for w in "desktop/wm/keybindings/panel-run-dialog ['<Alt>F2', '<Super>r']" "shell/keybindings/toggle-overview ['<Control>Escape']" \
+         "desktop/wm/keybindings/switch-windows ['<Alt>Tab']" "desktop/wm/keybindings/switch-applications ['<Super>Tab']"; do
+  grep -qxF "write /org/gnome/$w" "$tmp/dconf.log" && n=$((n + 1))
+done
+eq "Win+R, Ctrl+Esc, Alt+Tab = windows, Win+Tab = applications" "$n" "4"
+CK=/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings TM="/$TASK_MANAGER_KEY/"
+eq "Ctrl+Shift+Esc: a custom shortcut of its own" "$(grep -cE "^write $TM(binding '<Control><Shift>Escape'|name 'Task manager'|command '(resources|gnome-system-monitor)')$" "$tmp/dconf.log")" "3"
+eq "no custom shortcuts yet: the list gets ours" "$(grep "^write $CK " "$tmp/dconf.log")" "write $CK ['$TM']"
+# shellcheck disable=SC2329
+dconf_user_set() { [[ "$1" == "$CK" ]] && echo "['/mine/custom0/']"; return 0; }
+: >"$tmp/dconf.log"; windows_keys 2>/dev/null
+eq "your custom shortcuts stay, ours joins them" "$(grep "^write $CK " "$tmp/dconf.log")" "write $CK ['/mine/custom0/', '$TM']"
+# shellcheck disable=SC2329
+dconf_user_set() { [[ "$1" == "$CK" ]] && echo "['$TM']"; return 0; }
+: >"$tmp/dconf.log"; windows_keys 2>/dev/null
+eq "already in the list: not written again" "$(grep -c "^write $CK " "$tmp/dconf.log")" "0"
+# shellcheck disable=SC2329
+dconf_user_set() { return 0; }
+printf '#!/bin/sh\ncase "$2" in */enabled-extensions) echo "$FAKE_ON" ;; */disabled-extensions) echo "$FAKE_OFF" ;; esac\n' >"$tmp/fakebin/dconf"
+chmod +x "$tmp/fakebin/dconf"
+ext="$TARGET_HOME/.local/share/gnome-shell/extensions/$CLIPBOARD_UUID"; mkdir -p "$ext"
+ver CLIPBOARD_INDICATOR_VERSION >"$ext/.setup-ubuntu-workstation-version"   # installed: no download
+: >"$tmp/dconf.log"; PATH="$tmp/fakebin:$PATH" FAKE_ON="['a@b']" FAKE_OFF="" clipboard_history_install 2>/dev/null
+eq "the extension joins the enabled ones" "$(grep '^write /org/gnome/shell/enabled-extensions' "$tmp/dconf.log")" "write /org/gnome/shell/enabled-extensions ['a@b', '$CLIPBOARD_UUID']"
+eq "Win+V opens the history, notifications keep Win+M" "$(grep -cxE "write /org/gnome/shell/(extensions/clipboard-indicator/toggle-menu \['<Super>v'\]|keybindings/toggle-message-tray \['<Super>m'\])" "$tmp/dconf.log")" "2"
+eq "its Ctrl+F8…F12 shortcuts are off" "$(grep -cE "clipboard-indicator/(clear-history|prev-entry|next-entry|private-mode-binding) @as \[\]$" "$tmp/dconf.log")" "4"
+: >"$tmp/dconf.log"; PATH="$tmp/fakebin:$PATH" FAKE_ON="['a@b']" FAKE_OFF="['$CLIPBOARD_UUID']" clipboard_history_install 2>/dev/null
+eq "switched off in the Extensions app: stays off, nothing set" "$(wc -l <"$tmp/dconf.log")" "0"
+printf '#!/bin/sh\necho "$FAKE_TPL"\n' >"$tmp/fakebin/xdg-user-dir"; chmod +x "$tmp/fakebin/xdg-user-dir"
+mkdir -p "$tmp/tpl"; printf 'mine\n' >"$tmp/tpl/Markdown.md"
+PATH="$tmp/fakebin:$PATH" FAKE_TPL="$tmp/tpl" new_documents 2>/dev/null
+eq "New Document: the missing template is added, yours stays" "$(cd "$tmp/tpl" && printf '%s|' * && wc -c <'Text file.txt' && cat Markdown.md)" "Markdown.md|Text file.txt|0
+mine"
+PATH="$tmp/fakebin:$PATH" FAKE_TPL="$TARGET_HOME" new_documents 2>/dev/null
+n=0; for f in "${NEW_DOCUMENTS_FILES[@]}"; do [[ -e "$TARGET_HOME/$f" ]] && n=$((n + 1)); done
+eq "no templates folder (XDG_TEMPLATES_DIR = home): nothing written" "$n" "0"
+
+echo "Nemo settings (configs)"
+printf '#!/bin/sh\ngrep -qx user-db:user "$DCONF_PROFILE" || exit 1\ncat "%s/dump"\n' "$tmp" >"$tmp/fakebin/dconf"
+printf '[list-view]\ndefault-column-order=[1]\n\n[preferences]\nsize-prefixes=%s\n\n[window-state]\ngeometry=%s\nmaximized=false\nside-pane-view=%s\nsidebar-width=328\n\n[x]\ngeometry=1\n\n[y]\nsidebar-width=1\n' \
+  "'base-2'" "'1090x959+26+23'" "'tree'" >"$tmp/dump"
+eq "only your own settings, without the window's size and place" \
+  "$(PATH="$tmp/fakebin:$PATH" configs_dconf_dump /org/nemo/ "window-state/geometry window-state/maximized window-state/sidebar-width y/sidebar-width" | tr '\n' '|')" \
+  "[list-view]|default-column-order=[1]||[preferences]|size-prefixes='base-2'||[window-state]|side-pane-view='tree'||[x]|geometry=1|"
+rm -f "$tmp/fakebin/dconf"
+
 echo "pwsh prompt"
 if P="$(command -v pwsh || command -v "$HOME/.local/bin/pwsh")"; then
   r="$tmp/prompt-repo"; git init -q -b main "$r"

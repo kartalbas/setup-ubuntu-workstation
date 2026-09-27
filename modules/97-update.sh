@@ -11,7 +11,7 @@ declare -gA PIN_KEY=(
   [NERDFONT_CASCADIACODE]=NERD_FONTS [NERDFONT_CASCADIAMONO]=NERD_FONTS
   [NERDFONT_FIRACODE]=NERD_FONTS [NERDFONT_JETBRAINSMONO]=NERD_FONTS
   [NVM]=NODE [UV]=PYTHON [ANDROID_CMDLINE_TOOLS]=FLUTTER [RUSTUP]=RUST
-  [KUBENS]=KUBECTX [ARGO_ROLLOUTS]=ARGO
+  [KUBENS]=KUBECTX [ARGO_ROLLOUTS]=ARGO [CLIPBOARD_INDICATOR]=CLIPBOARD_HISTORY
 )
 # _pin_on PIN — the tool behind a pinned entry is enabled.
 _pin_on() {
@@ -26,7 +26,8 @@ declare -gA PIN_APPLY=(
   [KITTY]="kitty_install" [GHOSTTY]="system_note Ghostty" [ANTIGRAVITY]="antigravity_ide_install"
   [ANTIGRAVITY_HUB]="antigravity_hub_install" [PWSH]="tar_app_install --flat PWSH pwsh pwsh"
   [STARSHIP]="bin_install STARSHIP starship" [ZOXIDE]="bin_install ZOXIDE zoxide"
-  [QUAKE_TERMINAL]="quake_terminal_install" [CASCADIA]="fonts_apply"
+  [QUAKE_TERMINAL]="quake_terminal_install" [CLIPBOARD_INDICATOR]="clipboard_history_install"
+  [CASCADIA]="fonts_apply"
   [NERDFONT_CASCADIACODE]="fonts_apply" [NERDFONT_CASCADIAMONO]="fonts_apply"
   [NERDFONT_FIRACODE]="fonts_apply" [NERDFONT_JETBRAINSMONO]="fonts_apply"
   [NEOVIM]="tar_app_install NEOVIM nvim bin/nvim" [JETBRAINS_TOOLBOX]="jetbrains_toolbox_install"

@@ -1,12 +1,14 @@
 # Managed by setup-ubuntu-workstation: Nemo like Windows Explorer — the folder
 # tree on the left, the details list (Name, Date modified, Type, Size) on the
-# right, folders first, double-click opens. Nemo's own "Open in Terminal"
+# right, folders first, double-click opens, sizes counted in 1024s as in
+# Explorer (Nemo writes them KiB, MiB). Nemo's own "Open in Terminal"
 # opens the default terminal. Win+E opens the home folder in the default file
 # manager, which is Nemo (GNOME leaves that key unbound).
 [org/nemo/preferences]
 default-folder-viewer='list-view'
 sort-directories-first=true
 click-policy='double'
+size-prefixes='base-2'
 
 [org/nemo/window-state]
 side-pane-view='tree'

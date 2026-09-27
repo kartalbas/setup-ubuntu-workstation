@@ -5,7 +5,8 @@
 # copy of a file. The files are kept as they are, tokens included, so the
 # repository must be private. `./setup.sh install` puts them in place first,
 # config.conf included (it becomes this machine's config); ssh/ holds your SSH
-# keys (and ssh config) for ~/.ssh.
+# keys (and ssh config) for ~/.ssh; nemo/ Nemo's settings, action menu and
+# bookmarks.
 #   ./setup.sh configs         pull the repository, put your files in place
 #   ./setup.sh configs save    copy your files back (and the dock into DOCK), commit, push
 
@@ -15,6 +16,13 @@ CONFIGS_FILES=(
   "ghostty/local.conf|.config/ghostty/local.conf|0644"
   "powershell/profile.local.ps1|.config/powershell/profile.local.ps1|0644"
   "opencode/opencode.json|.config/opencode/opencode.json|0600"
+  "nemo/actions-tree.json|.config/nemo/actions-tree.json|0644"
+  "nemo/bookmarks|.config/gtk-3.0/bookmarks|0644"
+)
+# GNOME settings: path in the repository | dconf folder | keys left out
+# (section/key; a window's size and place belong to each screen)
+CONFIGS_DCONF=(
+  "nemo/settings.ini|/org/nemo/|window-state/geometry window-state/maximized window-state/sidebar-width window-state/sidebar-bookmark-breakpoint"
 )
 
 # configs_dir — where the config repository is (or would be) cloned.
@@ -74,8 +82,22 @@ configs_ssh() {
   return 0
 }
 
+# configs_dconf_dump FOLDER SKIP — your own settings in the dconf FOLDER (not
+# the system's defaults) as a keyfile, without the keys in SKIP.
+configs_dconf_dump() {
+  local profile; profile="$(mktemp)"; printf 'user-db:user\n' >"$profile"
+  DCONF_PROFILE="$profile" dconf dump "$1" 2>/dev/null | awk -v skip=" $2 " '
+    /^\[.*\]$/ { sec = substr($0, 2, length($0) - 2); head = $0; next }
+    /^$/ { next }
+    { key = $0; sub(/=.*/, "", key)
+      if (index(skip, " " sec "/" key " ")) next
+      if (head != "") { if (n++) print ""; print head; head = "" }
+      print }'
+  rm -f "$profile"
+}
+
 configs_run() { # [apply|save] [soft]
-  local mode="${1:-apply}" soft="${2:-}" repo dir entry src dst perm f host
+  local mode="${1:-apply}" soft="${2:-}" repo dir entry src dst perm f host skip out
   repo="$(cfg_get CONFIGS_REPO)"
   [[ "$repo" == */* ]] || die "No config repository set: ./setup.sh config set CONFIGS_REPO OWNER/NAME"
   dir="$(configs_dir)" host="$(hostname -s)"
@@ -95,6 +117,12 @@ configs_run() { # [apply|save] [soft]
         cmp -s "$f" "$dst" || install -m "$perm" "$f" "$dst"
         log_ok "${dst/#$TARGET_HOME/\~}"
       done
+      for entry in "${CONFIGS_DCONF[@]}"; do
+        IFS='|' read -r src dst skip <<<"$entry"
+        f="$(configs_source "$dir" "$src")"; [[ -f "$f" ]] || continue
+        user_dconf load "$dst" <"$f"
+        log_ok "GNOME settings $dst"
+      done
       configs_ssh apply "$dir"
       claude_llm_links ;;
     save)
@@ -106,6 +134,12 @@ configs_run() { # [apply|save] [soft]
         [[ -f "$dst" ]] || continue
         f="$(configs_source "$dir" "$src")"; mkdir -p "$(dirname "$f")"
         cmp -s "$dst" "$f" || install -m "$perm" "$dst" "$f"
+      done
+      for entry in "${CONFIGS_DCONF[@]}"; do
+        IFS='|' read -r src dst skip <<<"$entry"
+        out="$(configs_dconf_dump "$dst" "$skip")"; [[ -n "$out" ]] || continue
+        f="$(configs_source "$dir" "$src")"; mkdir -p "$(dirname "$f")"
+        printf '%s\n' "$out" | atomic_write "$f"
       done
       configs_ssh save "$dir"
       git -C "$dir" add -A

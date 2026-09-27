@@ -52,6 +52,25 @@ print(walk(json.load(open(sys.argv[1])).get("toplevel", [])) or "")' "$TARGET_HO
   fi
 }
 
+# _windows_keys — Windows' keys are there; one you set yourself is named.
+_windows_keys() {
+  on WINDOWS_KEYS || return 0
+  local line path="" key want have missing=() mine=()
+  while IFS= read -r line; do
+    [[ "$line" =~ ^[[:space:]]*(#|$) ]] && continue
+    if [[ "$line" =~ ^\[(.+)\]$ ]]; then path="/${BASH_REMATCH[1]}/"; continue; fi
+    key="${line%%=*}" want="${line#*=}" have="$(dconf read "$path$key" 2>/dev/null)"
+    if [[ -z "$have" ]]; then missing+=("$key"); elif [[ "$have" != "$want" ]]; then mine+=("$key"); fi
+  done < <(windows_keys_file)
+  [[ "$(dconf read /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings 2>/dev/null)" == *"'/$TASK_MANAGER_KEY/'"* ]] \
+    || missing+=("custom-keybindings")
+  if (( ${#missing[@]} )); then
+    log_err "$(printf '%-24s %s' "Windows keys" "not set: ${missing[*]} (./setup.sh install)")"; _d_bad=$((_d_bad + 1)); return 0
+  fi
+  log_ok "$(printf '%-24s %s' "Windows keys" "Win+R, Ctrl+Esc, Win+Shift+S, Win+D, Alt+Tab, Win+I, Ctrl+Shift+Esc")"; _d_ok=$((_d_ok + 1))
+  (( ${#mine[@]} == 0 )) || log_info "$(printf '%-24s %s' "" "set by you, left as it is: ${mine[*]}")"
+}
+
 # _dock — with DOCK in the config: the dock has those entries.
 _dock() {
   local want have
@@ -70,6 +89,8 @@ doctor() {
   _tool NEMO "Nemo (file manager)" "[ \"\$(xdg-mime query default inode/directory)\" = nemo.desktop ] && dpkg-query -W -f='nemo \${Version}, opens folders' nemo"
   _tool FILES_OPEN_IN "Files app: Open in" "/usr/bin/python3 -W ignore ~/.local/share/nautilus-python/extensions/setup-ubuntu-workstation-open-in.py"
   _tool QUAKE_TERMINAL "Quake Terminal" "cat ~/.local/share/gnome-shell/extensions/$QUAKE_UUID/.setup-ubuntu-workstation-version"
+  _tool CLIPBOARD_HISTORY "Clipboard history" "d=~/.local/share/gnome-shell/extensions/$CLIPBOARD_UUID; v=\$(cat \$d/.setup-ubuntu-workstation-version) && gsettings get org.gnome.shell enabled-extensions | grep -q \"'$CLIPBOARD_UUID'\" && s=\$(gnome-extensions info $CLIPBOARD_UUID 2>/dev/null | sed -n 's/^ *State: //p') && echo \"Clipboard Indicator \$v on \$(gsettings --schemadir \$d/schemas get org.gnome.shell.extensions.clipboard-indicator toggle-menu) (\${s:-loads at the next login})\""
+  _tool NEW_DOCUMENTS "New Document" "cd \"\$(xdg-user-dir TEMPLATES)\" && test -f '${NEW_DOCUMENTS_FILES[0]}' && test -f '${NEW_DOCUMENTS_FILES[1]}' && echo \"\$(ls | wc -l) templates in \$PWD\""
   _tool PWSH "PowerShell" "pwsh -NoLogo -NoProfile -Command '\$PSVersionTable.PSVersion.ToString()'"
   _tool PWSH_PROFILE "pwsh profile" "test -f ~/.config/powershell/profile.ps1 && echo ~/.config/powershell/profile.ps1"
   _tool STARSHIP "starship" starship --version
@@ -142,6 +163,7 @@ doctor() {
   _tool VAULT "vault" "vault version"
   _tool MKCERT "mkcert" mkcert --version
   _nemo_copy_path
+  _windows_keys
   _dock
   _ssh_keys
   echo >&2

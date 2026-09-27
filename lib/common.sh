@@ -352,6 +352,29 @@ dconf_user_defaults() {
   if (( n )); then log_ok "GNOME settings: $n set (the ones you had not set yourself)"; fi
   return 0
 }
+# gnome_extension_install KEY UUID — a GNOME Shell extension (KEY: its zip in
+# versions.conf) in ~/.local/share/gnome-shell/extensions/UUID, its settings
+# schema compiled, switched on; GNOME Shell loads it at the next login. One
+# you switched off in the Extensions app stays off (returns 1).
+gnome_extension_install() {
+  local key="$1" uuid="$2" dir file stamp exts
+  dir="$TARGET_HOME/.local/share/gnome-shell/extensions/$uuid"; stamp="$dir/.setup-ubuntu-workstation-version"
+  if [[ "$(cat "$stamp" 2>/dev/null)" != "$(ver "${key}_VERSION")" ]]; then
+    file="$(fetch "$key")"
+    run rm -rf "$dir"; run mkdir -p "$dir"
+    unzip_to "$file" "$dir"
+    [[ -d "$dir/schemas" ]] && run glib-compile-schemas "$dir/schemas"
+    [[ "$DRY_RUN" == 1 ]] || ver "${key}_VERSION" >"$stamp"
+  fi
+  if [[ "$(dconf read /org/gnome/shell/disabled-extensions 2>/dev/null)" == *"'$uuid'"* ]]; then
+    log_info "$uuid: switched off in the Extensions app — it stays off"; return 1
+  fi
+  exts="$(dconf read /org/gnome/shell/enabled-extensions 2>/dev/null || true)"
+  if [[ "$exts" != *"'$uuid'"* ]]; then
+    if [[ -z "$exts" || "$exts" == "@as []" ]]; then exts="['$uuid']"; else exts="${exts%]}, '$uuid']"; fi
+    user_dconf write /org/gnome/shell/enabled-extensions "$exts"
+  fi
+}
 # desktop_db — the menu learns new entries in ~/.local/share/applications.
 desktop_db() { have update-desktop-database && run update-desktop-database -q "$APPS_DIR"; return 0; }
 

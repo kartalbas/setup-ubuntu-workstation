@@ -1,0 +1,21 @@
+# Managed by setup-ubuntu-workstation: Windows' keys where GNOME's differ.
+# Written only where you have not set the key yourself.
+[org/gnome/desktop/wm/keybindings]
+panel-run-dialog=['<Alt>F2', '<Super>r']
+show-desktop=['<Super>d']
+switch-windows=['<Alt>Tab']
+switch-windows-backward=['<Shift><Alt>Tab']
+switch-applications=['<Super>Tab']
+switch-applications-backward=['<Shift><Super>Tab']
+
+[org/gnome/shell/keybindings]
+toggle-overview=['<Control>Escape']
+show-screenshot-ui=['Print', '<Shift><Super>s']
+
+[org/gnome/settings-daemon/plugins/media-keys]
+control-center=['<Super>i']
+
+[@TASK_MANAGER_KEY@]
+name='Task manager'
+command='@TASK_MANAGER@'
+binding='<Control><Shift>Escape'

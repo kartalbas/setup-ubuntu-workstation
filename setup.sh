@@ -104,6 +104,7 @@ install_all() {
   base_setup          # 20-base:       command-line tools, fonts
   shell_setup         # 30-shell:      pwsh, profile, starship, zoxide, bash integration
   terminal_setup      # 40-terminal:   kitty, Ghostty, Ptyxis, drop-down, default terminal
+  desktop_setup       # 45-desktop:    Windows' keys, clipboard history, New Document
   apps_setup          # 50-apps:       IDEs, Files app, Nemo, dock
   ai_setup            # 60-ai:         Claude Code, Codex, OpenCode, agy, Muse
   languages_setup     # 70-languages:  Node (nvm), Python (uv), Go, Java, Flutter, ...

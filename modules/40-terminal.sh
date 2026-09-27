@@ -119,18 +119,10 @@ default_terminal() {
   log_ok "Default terminal: $id"
 }
 
-# quake_terminal_install — GNOME Shell extension in the home, pinned; F12
+# quake_terminal_install — the GNOME extension Quake Terminal, pinned: F12
 # drops the default terminal down from the top of the screen.
 quake_terminal_install() {
-  local file dir="$TARGET_HOME/.local/share/gnome-shell/extensions/$QUAKE_UUID" stamp exts
-  stamp="$dir/.setup-ubuntu-workstation-version"
-  if [[ "$(cat "$stamp" 2>/dev/null)" != "$(ver QUAKE_TERMINAL_VERSION)" ]]; then
-    file="$(fetch QUAKE_TERMINAL)"
-    run rm -rf "$dir"; run mkdir -p "$dir"
-    unzip_to "$file" "$dir"
-    [[ -d "$dir/schemas" ]] && run glib-compile-schemas "$dir/schemas"
-    [[ "$DRY_RUN" == 1 ]] || ver QUAKE_TERMINAL_VERSION >"$stamp"
-  fi
+  gnome_extension_install QUAKE_TERMINAL "$QUAKE_UUID" || return 0
   QUAKE_APP_ID="$(grep -v '^#' "$TARGET_HOME/.config/xdg-terminals.list" 2>/dev/null | head -1)"
   render dconf-quake-terminal | dconf_user_defaults
   # The terminal follows DEFAULT_TERMINAL while it is one this setup chose.
@@ -138,10 +130,5 @@ quake_terminal_install() {
     "'$KITTY_DESKTOP'"|"'$GHOSTTY_DESKTOP'"|"'$PTYXIS_DESKTOP'")
       user_dconf write /org/gnome/shell/extensions/quake-terminal/terminal-id "'$QUAKE_APP_ID'" ;;
   esac
-  exts="$(dconf read /org/gnome/shell/enabled-extensions 2>/dev/null || true)"
-  if [[ "$exts" != *"'$QUAKE_UUID'"* ]]; then
-    if [[ -z "$exts" || "$exts" == "@as []" ]]; then exts="['$QUAKE_UUID']"; else exts="${exts%]}, '$QUAKE_UUID']"; fi
-    user_dconf write /org/gnome/shell/enabled-extensions "$exts"
-  fi
   log_ok "Quake Terminal ready on F12 (after the next login)"
 }
