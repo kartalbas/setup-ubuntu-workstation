@@ -108,8 +108,10 @@ function Prompt {
                 switch ($Matches[1]) { 'A' { $g.Ai++ } 'M' { $g.Mi++ } 'D' { $g.Di++ } 'R' { $g.Ri++ } }
                 switch ($Matches[2]) { 'M' { $g.M++ } 'D' { $g.D++ } }
             }
-            elseif ($line -like 'u *') { $g.U++ }
-            elseif ($line -like '? *') { $g.untracked++ }
+            # -match, not -like: for -like ? is any character, so '? *' would count
+            # every header line ('# branch.oid …') as an untracked file.
+            elseif ($line -match '^u ') { $g.U++ }
+            elseif ($line -match '^\? ') { $g.untracked++ }
         }
         $g.label = if ($g.branch -eq '(detached)') { git describe --tags --always 2>$null } else { "⑂ $($g.branch)" }
         $g.stashes = @(git stash list 2>$null).Count
