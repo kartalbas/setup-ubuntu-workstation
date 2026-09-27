@@ -1,5 +1,6 @@
-# Managed by setup-ubuntu-workstation — your own settings go into
-# profile.local.ps1 next to this file (loaded last, never overwritten).
+# Managed by setup-ubuntu-workstation (this block; lines outside it are left
+# alone) — your own settings go into profile.local.ps1 next to this file
+# (loaded last, never overwritten).
 
 # Editing like on Windows: Windows keys, history-based suggestions as a list,
 # Tab cycles through completions.

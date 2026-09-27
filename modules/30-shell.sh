@@ -9,7 +9,12 @@ shell_setup() {
   on STARSHIP && bin_install STARSHIP starship
   on ZOXIDE && deb_install ZOXIDE zoxide
   if on PWSH && on PWSH_PROFILE; then
-    render pwsh-profile.ps1 | user_file "$TARGET_HOME/.config/powershell/profile.ps1"
+    # A block in profile.ps1, so lines other tools add there (e.g. ai-core's
+    # PATH) stay. Earlier versions owned the whole file: it becomes the block.
+    local prof="$TARGET_HOME/.config/powershell/profile.ps1"
+    if [[ -f "$prof" ]] && ! grep -q '^# >>> setup-ubuntu-workstation >>>' "$prof" \
+       && head -1 "$prof" | grep -q '^# Managed by setup-ubuntu-workstation'; then run rm -f "$prof"; fi
+    render pwsh-profile.ps1 | managed_block "$prof" setup-ubuntu-workstation
     [[ -f "$TARGET_HOME/.config/powershell/profile.local.ps1" ]] \
       || printf '# Your own PowerShell settings (kept by setup-ubuntu-workstation).\n' \
          | user_file "$TARGET_HOME/.config/powershell/profile.local.ps1"
