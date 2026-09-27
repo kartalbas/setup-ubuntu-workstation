@@ -2,7 +2,7 @@
 # Managed by setup-ubuntu-workstation: Antigravity 2.0 and its antigravity:// links (browser sign-in)
 Name=Antigravity
 Comment=Google Antigravity 2.0, the agent manager
-Exec=/usr/local/bin/antigravity-hub %U
+Exec=@ANTIGRAVITY_HUB_BIN@ %U
 Icon=antigravity-hub
 Type=Application
 StartupNotify=true

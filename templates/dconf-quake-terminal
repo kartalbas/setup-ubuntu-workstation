@@ -1,7 +1,4 @@
 # Managed by setup-ubuntu-workstation: Quake Terminal (F12 drop-down).
-[org/gnome/shell]
-enabled-extensions=['quake-terminal@diegodario88.github.io']
-
 [org/gnome/shell/extensions/quake-terminal]
 terminal-id='@QUAKE_APP_ID@'
 terminal-shortcut=['F12']

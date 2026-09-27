@@ -17,8 +17,8 @@ default-visible-columns=['name', 'date_modified', 'type', 'size']
 default-column-order=['name', 'date_modified', 'type', 'size']
 
 [org/cinnamon/desktop/applications/terminal]
-exec='x-terminal-emulator'
-exec-arg='-e'
+exec='@NEMO_TERMINAL@'
+exec-arg='@NEMO_TERMINAL_ARG@'
 
 [org/gnome/settings-daemon/plugins/media-keys]
 home=['<Super>e']

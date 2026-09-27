@@ -9,34 +9,43 @@ import shutil
 # (4.1 in Nautilus 50), as the nautilus-python examples do.
 from gi.repository import GLib, GObject, Nautilus
 
-# label, program, command for a path, folders only
+# label, program, command (the program's path, a path), folders only
 ENTRIES = [
-    ('kitty', 'kitty', lambda p: ['kitty', '--directory', p], True),
-    ('Ghostty', 'ghostty', lambda p: ['ghostty', '--gtk-single-instance=false', f'--working-directory={p}'], True),
-    ('Terminal (Ptyxis)', 'ptyxis', lambda p: ['ptyxis', '--new-window', f'--working-directory={p}'], True),
-    ('VS Code', 'code', lambda p: ['code', p], False),
-    ('Antigravity IDE', 'antigravity-ide', lambda p: ['antigravity-ide', p], False),
+    ('kitty', 'kitty', lambda x, p: [x, '--directory', p], True),
+    ('Ghostty', 'ghostty', lambda x, p: [x, '--gtk-single-instance=false', f'--working-directory={p}'], True),
+    ('Terminal (Ptyxis)', 'ptyxis', lambda x, p: [x, '--new-window', f'--working-directory={p}'], True),
+    ('VS Code', 'code', lambda x, p: [x, p], False),
+    ('Antigravity IDE', 'antigravity-ide', lambda x, p: [x, p], False),
 ]
 
-# Programs whose package brings its own "Open in" extension: while it is there,
-# the menu shows only that one, so the entry appears once.
+# Programs whose package brings its own "Open in" extension (in the system's
+# extensions folder): while it is there, the menu shows only that one.
 OWN_EXTENSIONS = {'ghostty': 'ghostty.py'}
-EXTENSIONS_DIR = os.path.dirname(os.path.abspath(__file__))
+EXTENSION_DIRS = ['/usr/share/nautilus-python/extensions',
+                  os.path.expanduser('~/.local/share/nautilus-python/extensions')]
+# Programs this setup installs live in ~/.local/bin, which the Files app's
+# PATH may lack (it is added at login only when it existed then).
+HOME_BIN = os.path.expanduser('~/.local/bin')
+
+
+def find(program):
+    return shutil.which(program) or shutil.which(program, path=HOME_BIN)
 
 
 def brings_own(program):
     own = OWN_EXTENSIONS.get(program)
-    return bool(own) and os.path.exists(os.path.join(EXTENSIONS_DIR, own))
+    return bool(own) and any(os.path.exists(os.path.join(d, own)) for d in EXTENSION_DIRS)
 
 
 class OpenIn(GObject.GObject, Nautilus.MenuProvider):
     def _items(self, path, is_dir, where):
         items = []
         for label, program, command, folders_only in ENTRIES:
-            if (folders_only and not is_dir) or not shutil.which(program) or brings_own(program):
+            exe = find(program)
+            if (folders_only and not is_dir) or not exe or brings_own(program):
                 continue
             item = Nautilus.MenuItem(name=f'SetupOpenIn::{program}::{where}', label=f'Open in {label}')
-            item.connect('activate', self._run, command(path))
+            item.connect('activate', self._run, command(exe, path))
             items.append(item)
         return items
 
@@ -59,4 +68,4 @@ class OpenIn(GObject.GObject, Nautilus.MenuProvider):
 
 if __name__ == '__main__':
     print(', '.join(label + (' (its own extension)' if brings_own(program) else '')
-                    for label, program, _, _ in ENTRIES if shutil.which(program)) or 'no program installed')
+                    for label, program, _, _ in ENTRIES if find(program)) or 'no program installed')

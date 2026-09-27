@@ -3,7 +3,7 @@
 Name=Antigravity IDE
 Comment=Google Antigravity IDE
 GenericName=Text Editor
-Exec=/usr/local/bin/antigravity-ide %F
+Exec=@ANTIGRAVITY_IDE_BIN@ %F
 Icon=antigravity-ide
 Type=Application
 StartupNotify=false
@@ -14,5 +14,5 @@ Actions=new-empty-window;
 
 [Desktop Action new-empty-window]
 Name=New Empty Window
-Exec=/usr/local/bin/antigravity-ide --new-window %F
+Exec=@ANTIGRAVITY_IDE_BIN@ --new-window %F
 Icon=antigravity-ide

@@ -1,25 +1,32 @@
 # shellcheck shell=bash
-# modules/60-ai.sh — AI coding agents (C16-18, 68, 70). Claude Code comes from
-# its signed apt repository, Codex and OpenCode from pinned GitHub releases;
-# agy and Muse ship only vendor installers (to ~/.local/bin, which also update
-# them) — both run as the workstation user.
+# modules/60-ai.sh — AI coding agents (C16-18, 68, 70, 74), in the home. Claude
+# Code, agy and Muse come through their vendors' installers (to ~/.local/bin;
+# Claude Code checks its download's SHA-256 and updates itself), Codex and
+# OpenCode from pinned GitHub releases.
 
 ai_setup() {
   log_step "AI coding agents"
-  if on CLAUDE_CODE; then
-    apt_install claude-code bubblewrap socat ripgrep libnotify-bin
-    apt_upgrade_pkgs claude-code
-    claude_sandbox_apparmor
-  fi
+  on CLAUDE_CODE && claude_code_install
   on CODEX && bin_install CODEX codex codex-x86_64-unknown-linux-musl
   on OPENCODE && bin_install OPENCODE opencode
   if on CLAUDE_LLM; then
-    atomic_write /usr/local/bin/claude-llm 0755 <"$REPO_ROOT/tools/claude-llm"
+    atomic_write "$BIN_DIR/claude-llm" 0755 <"$REPO_ROOT/tools/claude-llm"
     claude_llm_links
   fi
   on AGY && vendor_installer "Antigravity CLI (agy)" "https://antigravity.google/cli/install.sh" agy
   on MUSE && vendor_installer "Muse Code (muse)" "https://dev.meta.ai/install.sh" muse
   return 0
+}
+
+# claude_code_install — Anthropic's native installer, CLAUDE_CHANNEL (latest or
+# stable): ~/.local/bin/claude, which keeps itself up to date from then on.
+claude_code_install() {
+  local ch; ch="$(cfg_get CLAUDE_CHANNEL latest)"
+  [[ "$ch" == latest || "$ch" == stable ]] || die "CLAUDE_CHANNEL must be latest or stable"
+  if [[ -x "$BIN_DIR/claude" ]]; then
+    log_ok "Claude Code $(user_out claude --version 2>/dev/null | head -1) (updates itself)"; return 0
+  fi
+  vendor_installer "Claude Code" "https://claude.ai/install.sh" claude "$ch"
 }
 
 # opencode_llms — OpenCode with your own two LLM servers (llm1, llm2): asks
@@ -46,42 +53,31 @@ opencode_llms() {
 # OpenCode's config (see tools/claude-llm); links to servers that are no
 # longer there go.
 claude_llm_links() {
-  local cfg="$TARGET_HOME/.config/opencode/opencode.json" bin="$TARGET_HOME/.local/bin" names name link
+  local cfg="$TARGET_HOME/.config/opencode/opencode.json" names name link target="$BIN_DIR/claude-llm"
   local -a list=()
-  on CLAUDE_LLM && [[ -x /usr/local/bin/claude-llm ]] || return 0
+  on CLAUDE_LLM && [[ -x "$target" ]] || return 0
   names="$(python3 -c 'import json, sys; print(" ".join(json.load(open(sys.argv[1])).get("provider", {})))' "$cfg" 2>/dev/null)" || names=""
   read -ra list <<<"$names"
-  for link in "$bin"/claude-*; do
-    [[ -L "$link" && "$(readlink "$link")" == /usr/local/bin/claude-llm ]] || continue
-    [[ " $names " == *" ${link##*/claude-} "* ]] || as_user rm -f "$link"
+  for link in "$BIN_DIR"/claude-*; do
+    [[ -L "$link" && "$(readlink "$link")" == "$target" ]] || continue
+    [[ " $names " == *" ${link##*/claude-} "* ]] || run rm -f "$link"
   done
   for name in "${list[@]}"; do
     [[ "$name" =~ ^[A-Za-z0-9._-]+$ && "$name" != llm ]] || continue
-    as_user mkdir -p "$bin"; as_user ln -sfn /usr/local/bin/claude-llm "$bin/claude-$name"
+    run ln -sfn "$target" "$BIN_DIR/claude-$name"
   done
   if (( ${#list[@]} )); then log_ok "Claude Code on your LLM servers: $(printf 'claude-%s ' "${list[@]}")"; fi
   return 0
 }
 
-# Ubuntu 24.04+ keeps unprivileged programs from creating user namespaces;
-# Claude Code's sandbox (bubblewrap) needs them. Profile from the Claude Code
-# docs (Sandboxing, "Ubuntu 24.04 and later").
-claude_sandbox_apparmor() {
-  [[ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" == 1 ]] || return 0
-  render apparmor-bwrap | atomic_write /etc/apparmor.d/bwrap 0644
-  if (( CHANGED )); then run systemctl reload apparmor; fi
-  return 0
-}
-
-# vendor_installer LABEL URL BINARY — run the vendor's installer as the user
+# vendor_installer LABEL URL BINARY [ARG...] — run the vendor's installer
 # (installs or updates BINARY in ~/.local/bin).
 vendor_installer() {
-  local label="$1" url="$2" bin="$3" script
+  local label="$1" url="$2" bin="$3" script; shift 3
   script="$(mktemp)"
   run curl -fsSL -o "$script" "$url"
-  chmod 0644 "$script"
-  as_user bash "$script" </dev/null >/dev/null
+  as_user bash "$script" "$@" </dev/null >/dev/null
   rm -f "$script"
-  [[ "$DRY_RUN" == 1 || -x "$TARGET_HOME/.local/bin/$bin" ]] || die "$label: $TARGET_HOME/.local/bin/$bin missing after its installer"
+  [[ "$DRY_RUN" == 1 || -x "$BIN_DIR/$bin" ]] || die "$label: ~/.local/bin/$bin missing after its installer"
   log_ok "$label installed/updated"
 }

@@ -24,7 +24,7 @@ for m in modules/*.sh; do
   # shellcheck source=/dev/null
   . "$m"
 done
-atomic_write() { local t; t="$(mktemp)"; cat >"$t"; mv "$t" "$1"; CHANGED=1; }   # no chmod/chown/log
+atomic_write() { local t; mkdir -p "$(dirname "$1")"; t="$(mktemp)"; cat >"$t"; mv "$t" "$1"; CHANGED=1; }   # no chmod/log
 cfg_load; ver_load
 
 echo "config"
@@ -54,33 +54,34 @@ done < <(grep -oE '^[A-Z_]+_URL' versions.conf)
 ok "every pinned URL has a version and a checksum"
 
 echo "templates"
-TARGET_HOME=/home/u; CFG[PWSH]=1 CFG[VSCODE]=0
-# shellcheck disable=SC2329  # called by kitty_config
-user_file() { cat >"$tmp/$(basename "$1")"; }
+TARGET_HOME="$tmp/u"; set_paths; CFG[PWSH]=1 CFG[VSCODE]=0
+K="$TARGET_HOME/.config/kitty" PW="$BIN_DIR/pwsh -NoLogo"
 kitty_config
-eq "kitty.conf gets the shell" "$(grep -c '^shell  *pwsh -NoLogo$' "$tmp/kitty.conf")" "1"
-eq "kitty.conf maps the profiles" "$(grep -cE '^map ctrl\+shift\+(1  *launch --type=tab pwsh -NoLogo|2  *launch --type=tab bash -l)$' "$tmp/kitty.conf")" "2"
-grep -q "profiles.sh 'PowerShell|pwsh -NoLogo|Ctrl+Shift+1' 'Bash|bash -l|Ctrl+Shift+2'$" "$tmp/kitty.conf" \
-  && ok "kitty.conf passes the profiles to the menu" || bad "profile menu line: $(grep profiles.sh "$tmp/kitty.conf")"
-grep -q '^map ctrl+comma  *launch --type=tab nano /home/u/.config/kitty/local.conf$' "$tmp/kitty.conf" \
-  && ok "Ctrl+, edits local.conf" || bad "Ctrl+, line: $(grep ctrl+comma "$tmp/kitty.conf")"
-python3 -m py_compile "$tmp/windows_terminal.py" && ok "kitty helper compiles" || bad "kitty helper does not compile"
-python3 -m py_compile tools/opencode-llms.py && python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); assert set(c["provider"]) == {"llm1", "llm2"}' templates/opencode.json \
+eq "kitty.conf gets the shell (by its path)" "$(grep -cxF "shell                       $PW" "$K/kitty.conf")" "1"
+eq "kitty.conf maps the profiles" "$(grep -cxE "map ctrl\+shift\+(1  *launch --type=tab ${PW//./\\.}|2  *launch --type=tab bash -l)" "$K/kitty.conf")" "2"
+grep -qF "profiles.sh 'PowerShell|$PW|Ctrl+Shift+1' 'Bash|bash -l|Ctrl+Shift+2'" "$K/kitty.conf" \
+  && ok "kitty.conf passes the profiles to the menu" || bad "profile menu line: $(grep profiles.sh "$K/kitty.conf")"
+grep -qxE "map ctrl\+comma  *launch --type=tab nano $K/local.conf" "$K/kitty.conf" \
+  && ok "Ctrl+, edits local.conf" || bad "Ctrl+, line: $(grep ctrl+comma "$K/kitty.conf")"
+python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$K/windows_terminal.py" \
+  && ok "kitty helper compiles" || bad "kitty helper does not compile"
+python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' tools/opencode-llms.py \
+  && python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); assert set(c["provider"]) == {"llm1", "llm2"}' templates/opencode.json \
   && ok "OpenCode template (llm1, llm2) and helper are valid" || bad "OpenCode template or helper broken"
 grep -qiE 'https?://[a-z0-9-]+\.[a-z]|[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' <(grep -v 'opencode.ai/config.json' templates/opencode.json) \
   && bad "OpenCode template has a real host" || ok "OpenCode template has placeholders only"
 ghostty_config
-eq "config.ghostty gets the shell" "$(grep -c '^command = pwsh -NoLogo$' "$tmp/config.ghostty")" "1"
-eq "config.ghostty loads local.conf" "$(grep -c '^config-file = ?local.conf$' "$tmp/config.ghostty")" "1"
+eq "config.ghostty gets the shell (by its path)" "$(grep -cxF "command = $PW" "$TARGET_HOME/.config/ghostty/config.ghostty")" "1"
+eq "config.ghostty loads local.conf" "$(grep -c '^config-file = ?local.conf$' "$TARGET_HOME/.config/ghostty/config.ghostty")" "1"
 PTYXIS_PROFILE_UUID=0123abcd
 eq "Ptyxis defaults name the Bash profile" "$(render dconf-ptyxis | grep -c "^default-profile-uuid='0123abcd'$\|^label='Bash'$")" "2"
 CFG[STARSHIP]=1; bash_block
-bash -n "$tmp/.bashrc" && ok "bash block (starship) is valid bash" || bad "bash block (starship) has a syntax error"
-eq "tab title: directory name" "$(cd /usr/local && bash -c '. <(grep "^__tab_title" "$1"); __tab_title' _ "$tmp/.bashrc" | od -An -c | tr -s ' ')" " 033 ] 0 ; l o c a l \a"
+bash -n "$TARGET_HOME/.bashrc" && ok "bash block (starship) is valid bash" || bad "bash block (starship) has a syntax error"
+eq "tab title: directory name" "$(cd /usr/local && bash -c '. <(grep "^__tab_title" "$1"); __tab_title' _ "$TARGET_HOME/.bashrc" | od -An -c | tr -s ' ')" " 033 ] 0 ; l o c a l \a"
 CFG[STARSHIP]=0; bash_block
-bash -n "$tmp/.bashrc" && ok "bash block (no starship) is valid bash" || bad "bash block (no starship) has a syntax error"
+bash -n "$TARGET_HOME/.bashrc" && ok "bash block (no starship) is valid bash" || bad "bash block (no starship) has a syntax error"
 # shellcheck disable=SC2016  # PS1 as Ubuntu's ~/.bashrc leaves it, before our block
-eq "Ubuntu's user@host title is dropped" "$(bash -c 'PS1="\[\e]0;\u@\h: \w\a\]\u@\h:\w\$ "; eval "$(grep "^PS1=" "$1")"; printf %s "$PS1"' _ "$tmp/.bashrc")" '\u@\h:\w$ '
+eq "Ubuntu's user@host title is dropped" "$(bash -c 'PS1="\[\e]0;\u@\h: \w\a\]\u@\h:\w\$ "; eval "$(grep "^PS1=" "$1")"; printf %s "$PS1"' _ "$TARGET_HOME/.bashrc")" '\u@\h:\w$ '
 miss=""
 while read -r p; do [[ -n "${PIN_APPLY[$p]:-}" ]] || miss+=" $p"; done < <(grep -oE '^[A-Z0-9_]+_(VERSION|MINOR)=' versions.conf | sed -E 's/_(VERSION|MINOR)=//')
 eq "update knows how to apply every pinned tool" "${miss:-none}" "none"
@@ -111,9 +112,22 @@ eq "save takes the machine's key" "$(cat "$repo/setup-ubuntu-workstation/ssh/id_
 
 echo "managed block"
 f="$tmp/bashrc"; printf 'mine 1\nmine 2\n' >"$f"
-user_file() { atomic_write "$1"; }
 printf 'A\n' | managed_block "$f" test; printf 'B\n' | managed_block "$f" test
 eq "block replaced, rest kept" "$(tr '\n' '|' <"$f")" "mine 1|mine 2|# >>> test >>>|B|# <<< test <<<|"
+
+echo "home, not the system"
+eq "system part: no tool that lives in the home now" \
+  "$(system_packages | grep -cxE 'jq|gh|ripgrep|bat|fd|git-delta|zoxide|claude-code|kubectl|helm|terraform|vault|azure-cli|google-cloud-cli|powershell(-lts)?|openjdk-.*|dotnet-sdk-.*|fonts-cascadia-code|bubblewrap|socat')" "0"
+grep -nE '(atomic_write|run (rm|mkdir|ln|install|tar|cp|mv)|>) *"?/(usr|opt|etc|var)/' modules/[2-9]*.sh \
+  && bad "a home module writes into the system (above)" || ok "home modules write nothing into /usr, /opt, /etc, /var"
+# shellcheck disable=SC2329  # stubs for dconf_user_defaults and dock_setup
+dconf_user_set() { [[ "$1" == /org/x/kept ]] && echo "'mine'"; return 0; }
+# shellcheck disable=SC2329
+user_dconf() { echo "$*" >>"$tmp/dconf.log"; }
+printf "[org/x]\nkept='a'\nnew='b'\n" | dconf_user_defaults 2>/dev/null
+eq "GNOME settings: only what the user has not set is written" "$(cat "$tmp/dconf.log")" "write /org/x/new 'b'"
+: >"$tmp/dconf.log"; CFG[DOCK]="a.desktop b.desktop"; dock_setup 2>/dev/null
+eq "DOCK becomes the dock's list" "$(cat "$tmp/dconf.log")" "write /org/gnome/shell/favorite-apps ['a.desktop', 'b.desktop']"
 
 echo
 echo "$pass passed, $fail failed"

@@ -1,26 +1,23 @@
 # shellcheck shell=bash
 # modules/30-shell.sh — PowerShell 7, its profile, starship, zoxide and the
-# bash integration (A4-7). Per-user files carry a "managed" header and load
-# a *.local file of the user's own, which is never touched.
+# bash integration (A4-7), in the home. Per-user files carry a managed block
+# and load a *.local file of the user's own, which is never touched.
 
 shell_setup() {
   log_step "Shell: PowerShell, prompt"
-  on PWSH && deb_install PWSH powershell-lts
+  on PWSH && tar_app_install --flat PWSH pwsh pwsh
   on STARSHIP && bin_install STARSHIP starship
-  on ZOXIDE && deb_install ZOXIDE zoxide
+  on ZOXIDE && bin_install ZOXIDE zoxide
   if on PWSH && on PWSH_PROFILE; then
     # A block in profile.ps1, so lines other tools add there (e.g. ai-core's
-    # PATH) stay. Earlier versions owned the whole file: it becomes the block.
+    # PATH) stay.
     local prof="$TARGET_HOME/.config/powershell/profile.ps1"
-    if [[ -f "$prof" ]] && ! grep -q '^# >>> setup-ubuntu-workstation >>>' "$prof" \
-       && head -1 "$prof" | grep -q '^# Managed by setup-ubuntu-workstation'; then run rm -f "$prof"; fi
     render pwsh-profile.ps1 | managed_block "$prof" setup-ubuntu-workstation
     [[ -f "$TARGET_HOME/.config/powershell/profile.local.ps1" ]] \
       || printf '# Your own PowerShell settings (kept by setup-ubuntu-workstation).\n' \
-         | user_file "$TARGET_HOME/.config/powershell/profile.local.ps1"
+         | atomic_write "$TARGET_HOME/.config/powershell/profile.local.ps1"
   fi
   bash_block
-  on GO && render profile.d.sh | atomic_write /etc/profile.d/setup-ubuntu-workstation.sh 0644
   return 0
 }
 
@@ -28,6 +25,12 @@ shell_setup() {
 bash_block() {
   {
     echo "# Managed by setup-ubuntu-workstation — edit outside this block."
+    # The programs this setup installs (~/.local/bin; Ubuntu's ~/.profile adds
+    # it only when it existed at login) and Go's installed tools.
+    echo 'case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac'
+    on GO && echo 'case ":$PATH:" in *":$HOME/go/bin:"*) ;; *) export PATH="$HOME/go/bin:$PATH" ;; esac'
+    if on JAVA || on MAVEN || on FLUTTER; then echo '[ -d "$HOME/.local/opt/jdk" ] && export JAVA_HOME="$HOME/.local/opt/jdk"'; fi
+    on DOTNET && echo '[ -d "$HOME/.local/opt/dotnet" ] && export DOTNET_ROOT="$HOME/.local/opt/dotnet"'
     if on NODE; then
       echo 'export NVM_DIR="$HOME/.nvm"'
       echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"'

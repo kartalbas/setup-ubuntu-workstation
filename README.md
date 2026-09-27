@@ -1,16 +1,28 @@
 # setup-ubuntu-workstation
 
-One clone, one command: Ubuntu 26.04 desktop becomes a developer workstation
-with a terminal that behaves like **Windows Terminal**, PowerShell 7, the
-browsers, IDEs and AI coding agents, Git, languages, Docker, Kubernetes and
-cloud CLIs — newest versions, every download checked (SHA-256 or signed apt
-repository with a verified key).
+Ubuntu 26.04 desktop becomes a developer workstation with a terminal that
+behaves like **Windows Terminal**, PowerShell 7, the browsers, IDEs and AI
+coding agents, Git, languages, Docker, Kubernetes and cloud CLIs — newest
+versions, every download checked (SHA-256 or signed apt repository with a
+verified key).
+
+Almost everything goes into your home and belongs to you: your account
+installs and updates it without sudo. Only what Ubuntu allows root alone
+(packages, Docker, an AppArmor profile) is a separate step:
 
 ```bash
 git clone <this-repo> setup-ubuntu-workstation && cd setup-ubuntu-workstation
-sudo ./setup.sh install        # everything in the table below that is "on"
-# log out and in once (docker group, fonts, default terminal)
+sudo ./setup.sh system         # the system part (packages, browsers, Docker)
+./setup.sh install             # everything else, in your home — no sudo
+# log out and in once (docker group, fonts, menu, dock)
 ```
+
+| Where | What |
+|---|---|
+| your home (`./setup.sh install`) | programs in `~/.local/bin` and `~/.local/opt` (kitty, PowerShell, Antigravity, Neovim, Go, Java, .NET, gcloud, the command-line tools, Kubernetes and cloud CLIs, Claude Code, Codex, OpenCode), fonts, menu entries, the Files app and Nemo additions, GNOME extensions, settings; nvm/Node, uv/Python, Flutter, Rust |
+| the system (`sudo ./setup.sh system`) | Ubuntu packages (git, build-essential, htop, Ptyxis, Nemo, database clients, …), Chrome, Edge and VS Code (their apt repositories: `sudo apt upgrade` updates them), Chromium (snap, updates itself), Ghostty and Beyond Compare (.deb), Docker Engine with you in the `docker` group (docker then works without sudo), and an AppArmor profile that lets Antigravity use Chromium's sandbox, as Ubuntu's own profiles do for VS Code and Chrome |
+
+`install` checks the system part first and names what is missing.
 
 At the end it asks, one by one, to sign in to GitHub (`gh`, which also becomes
 git's credential helper — no plain-text passwords; git's name and e-mail are
@@ -22,22 +34,20 @@ login in the keyring on Linux yet
 its file store (`~/.config/muse/auth.json`, 0600) is set for it. Skip any of them and
 repeat later with `./setup.sh login`.
 
-Only what changes the system needs sudo (`install`, `config set`); everything
-for your own account runs without it:
-
 | Command | |
 |---|---|
-| `sudo ./setup.sh install` | install and configure everything enabled; re-run it any time (e.g. after a git pull) |
-| `sudo ./setup.sh update` | every tool with its installed and newest version; update all that is newer (Enter) or pick numbers (`2 5-7`); `--list` only shows, `--all` asks nothing |
-| `sudo ./setup.sh config set KEY 0\|1` | switch a tool on or off |
+| `sudo ./setup.sh system` | the system part; again after switching on a tool that needs it, or for a newer Ghostty / Beyond Compare |
+| `./setup.sh install` | install and configure everything else; re-run it any time (e.g. after a git pull) |
+| `./setup.sh update` | every tool in your home with its installed and newest version; update all that is newer (Enter) or pick numbers (`2 5-7`); `--list` only shows, `--all` asks nothing. System packages: `sudo apt update && sudo apt upgrade` |
+| `./setup.sh config set KEY 0\|1` | switch a tool on or off |
 | `./setup.sh login` | the sign-ins above |
-| `./setup.sh doctor` | every enabled tool with its version |
+| `./setup.sh doctor` | the system part, then every enabled tool with its version |
 | `./setup.sh opencode` | OpenCode with your own two LLM servers (below) |
+| `./setup.sh configs [save]` | your settings from your own config repository, or back into it (below) |
 | `./setup.sh config show` | the current settings |
 
-Per-user parts (nvm/Node, Python, Flutter, agy, Muse, terminal and shell
-settings) go to your home, system parts to the system. Re-running is safe and
-brings pinned tools to the versions in `versions.conf`.
+Only `system` runs with sudo; every other command refuses it. Re-running is
+safe and brings pinned tools to the versions in `versions.conf`.
 
 **OpenCode with your own LLM servers** (OpenAI-compatible, e.g. llama-server):
 `./setup.sh opencode` asks for the base URL, token and a display name of `llm1`
@@ -107,19 +117,16 @@ official Linux build and comes from the Ubuntu .deb listed on ghostty.org
 
 **Terminal (Ptyxis)** gets Windows Terminal's font, colours, size, bar cursor
 and word selection, Ctrl+V pastes, Ctrl+Tab / Ctrl+Shift+Tab and Ctrl+Alt+1..9
-switch tabs; the "+" menu offers its profiles. These are system-wide
-defaults: Ptyxis's own preferences still change them. It has no splits and
-copies with Ctrl+Shift+C.
-
-WezTerm and Contour, which earlier versions of this repository installed, are
-removed again by `install`.
+switch tabs; the "+" menu offers its profiles. These settings are written
+only where you have not set one yourself: what you change in Ptyxis's
+preferences stays. It has no splits and copies with Ctrl+Shift+C.
 
 **Nemo** is the file manager, set up like Windows Explorer: the folder tree on
 the left, the details list (Name, Date modified, Type, Size) on the right,
 folders first, double-click opens, tabs with Ctrl+T/W and Ctrl+Tab, F2, F5,
 Delete / Shift+Delete, Alt+Left/Right/Up, Alt+Enter, Ctrl+Shift+N, Ctrl+F,
 and "Open in …" on right-click. Folders open in it, Win+E opens it, and it
-takes the Files app's place in the dock. Unlike Explorer, Backspace goes up and F3 opens a
+takes the Files app's place in the dock (unless `DOCK` sets the dock). Unlike Explorer, Backspace goes up and F3 opens a
 second pane (fixed in Nemo). Nautilus stays installed: GNOME needs it for the
 desktop icons and file dialogs, and "Show in folder" from an application may
 still open it while it runs.
@@ -127,13 +134,13 @@ still open it while it runs.
 ## Your own config repository
 
 Keep your settings in a private repository of your own and put them on every
-machine with one command. Set it once: `sudo ./setup.sh config set
-CONFIGS_REPO OWNER/NAME`. It is cloned to `~/repos/<owner>/<name>`, and its
-folder `setup-ubuntu-workstation/` holds:
+machine with one command. Set it once: `./setup.sh config set CONFIGS_REPO
+OWNER/NAME`. It is cloned to `~/repos/<owner>/<name>`, and its folder
+`setup-ubuntu-workstation/` holds:
 
 | In the repository | Goes to |
 |---|---|
-| `config.conf` | `/etc/setup-ubuntu-workstation/config.conf` (with the next `sudo ./setup.sh install`) |
+| `config.conf` (with `DOCK`, your dock) | `~/.config/setup-ubuntu-workstation/config.conf` |
 | `kitty/local.conf`, `ghostty/local.conf` | `~/.config/kitty/`, `~/.config/ghostty/` |
 | `powershell/profile.local.ps1` | `~/.config/powershell/` |
 | `opencode/opencode.json` (URLs and tokens of your LLM servers) | `~/.config/opencode/opencode.json` (0600) |
@@ -141,9 +148,12 @@ folder `setup-ubuntu-workstation/` holds:
 | `hosts/<hostname>/…` | the same files, for that machine only |
 
 `./setup.sh configs` pulls the repository and puts the files in place, and
-`sudo ./setup.sh install` does the same at its end; `./setup.sh configs save`
-copies yours back (from `~/.ssh` only `id_*` and `config`, never
-`authorized_keys` or `known_hosts`), commits and pushes. The files are kept
+`./setup.sh install` does the same first (so its `config.conf` counts);
+`./setup.sh configs save` copies yours back (from `~/.ssh` only `id_*` and
+`config`, never `authorized_keys` or `known_hosts`; the dock as it is into
+`DOCK`), commits and pushes. A new machine then needs: `./setup.sh config set
+CONFIGS_REPO OWNER/NAME`, `sudo ./setup.sh system`, `./setup.sh install`,
+the sign-ins, `./setup.sh install` once more (now with your config). The files are kept
 as they are, tokens and private keys included — keep the repository private.
 
 ## Where your settings live
@@ -153,12 +163,12 @@ placeholders (`config.example.conf`, `templates/opencode.json`).
 
 | What | Where | Mode |
 |---|---|---|
-| Which tools are on or off | `/etc/setup-ubuntu-workstation/config.conf` | 644 root |
-| Newer versions chosen with `update` (only once you chose one) | `/etc/setup-ubuntu-workstation/versions.local.conf` | 644 root |
+| Which tools are on or off | `~/.config/setup-ubuntu-workstation/config.conf` | 644 |
+| Newer versions chosen with `update` (only once you chose one) | `~/.config/setup-ubuntu-workstation/versions.local.conf` | 644 |
 | OpenCode: your LLM servers with URL, token and name | `~/.config/opencode/opencode.json` | 600 |
 | SSH keys (from your config repository) | `~/.ssh/id_*` | 600 |
 | Your own terminal and shell settings (never overwritten) | `~/.config/kitty/local.conf`, `~/.config/ghostty/local.conf`, `~/.config/powershell/profile.local.ps1`, `~/.bashrc` outside the marked block | 644 |
-| Changes made in Terminal's (Ptyxis) preferences | `~/.config/dconf/user` | 664 |
+| GNOME settings (Ptyxis, Nemo, font hinting, dock): what this setup set and what you changed | `~/.config/dconf/user` | 664 |
 | git name and e-mail | `~/.gitconfig` | 664 |
 | Sign-ins | gh `~/.config/gh/hosts.yml` (token in the keyring), Claude Code `~/.claude/.credentials.json`, Codex `~/.codex/auth.json`, Muse `~/.config/muse/auth.json`, agy in the GNOME keyring (`~/.local/share/keyrings/`) | 600 |
 
@@ -168,90 +178,93 @@ put your own settings into the files above instead.
 
 ## What gets installed
 
-`on` = default. Change with `sudo ./setup.sh config set KEY 0|1` (the keys and
-numbers are in `/etc/setup-ubuntu-workstation/config.conf`), then run install
-again. Nothing is removed when switched off.
+`on` = default. Change with `./setup.sh config set KEY 0|1` (the keys and
+numbers are in `~/.config/setup-ubuntu-workstation/config.conf`), then run
+install again (and `sudo ./setup.sh system` for the ones marked *system*).
+Nothing is removed when switched off.
 
 | Nr | Tool | Source | On |
 |---|---|---|---|
 | **A** | **Terminal and shell** | | |
-| 1 | kitty (default terminal) | GitHub, pinned | ✓ |
-| 2 | Ghostty (to compare) | Ubuntu .deb (community), pinned | ✓ |
-| 69 | Terminal (Ptyxis) set up like Windows Terminal, with bash; GNOME full font hinting | Ubuntu | ✓ |
-| 72 | Files app: "Open in" kitty, Ghostty, Terminal (Ptyxis), VS Code, Antigravity IDE | this repo (nautilus-python) | ✓ |
-| 75 | Nemo as the file manager, like Windows Explorer (below) | Ubuntu | ✓ |
+| 1 | kitty (default terminal) | GitHub, pinned, `~/.local/opt` | ✓ |
+| 2 | Ghostty (to compare) | Ubuntu .deb (community), pinned — *system* | ✓ |
+| 69 | Terminal (Ptyxis) set up like Windows Terminal, with bash; GNOME full font hinting | Ubuntu — *system* | ✓ |
+| 72 | Files app: "Open in" kitty, Ghostty, Terminal (Ptyxis), VS Code, Antigravity IDE | this repo (nautilus-python: *system*) | ✓ |
+| 75 | Nemo as the file manager, like Windows Explorer (below) | Ubuntu — *system* | ✓ |
 | 3 | Quake Terminal: drop-down on F12 | GNOME extension, pinned | |
-| 4 | PowerShell 7 LTS | GitHub .deb, pinned | ✓ |
+| 4 | PowerShell 7 | GitHub tarball, pinned, `~/.local/opt` | ✓ |
 | 5 | pwsh profile | this repo | ✓ |
 | 6 | starship prompt | GitHub, pinned | ✓ |
-| 7 | zoxide | GitHub .deb, pinned | |
-| 8 | Cascadia Code / Mono, drawn with their own hints as on Windows | Ubuntu | ✓ |
+| 7 | zoxide | GitHub, pinned | |
+| 8 | Cascadia Code / Mono, drawn with their own hints as on Windows | Microsoft (GitHub), pinned | ✓ |
 | 9 | Nerd Fonts (Caskaydia, FiraCode, JetBrains Mono) | GitHub, pinned | ✓ |
 | **B** | **Browsers, editors, IDEs** | | |
-| 10 | Google Chrome | Google apt repo | ✓ |
-| 66 | Microsoft Edge | Microsoft apt repo | ✓ |
-| 67 | Chromium | snap (Canonical) | ✓ |
-| 11 | VS Code | Microsoft apt repo | ✓ |
-| 12 | Antigravity IDE 2.x (the apt repository only has the old 1.x) | Google tarball, pinned | ✓ |
-| 73 | Antigravity 2.0, the agent manager (`antigravity-hub`) | Google tarball, pinned | ✓ |
+| 10 | Google Chrome | Google apt repo — *system* | ✓ |
+| 66 | Microsoft Edge | Microsoft apt repo — *system* | ✓ |
+| 67 | Chromium | snap (Canonical), updates itself — *system* | ✓ |
+| 11 | VS Code | Microsoft apt repo — *system* | ✓ |
+| 12 | Antigravity IDE 2.x (the apt repository only has the old 1.x) | Google tarball, pinned, `~/.local/opt` (+ AppArmor profile: *system*) | ✓ |
+| 73 | Antigravity 2.0, the agent manager (`antigravity-hub`) | Google tarball, pinned, `~/.local/opt` | ✓ |
 | 13 | JetBrains Toolbox (in `~/.local/share/JetBrains/Toolbox`, updates itself) | JetBrains, pinned first version | ✓ |
-| 14 | Neovim, Vim | GitHub tarball, pinned / Ubuntu | ✓ |
-| 15 | Beyond Compare (licence needed) | vendor .deb, pinned | ✓ |
+| 14 | Neovim, Vim | GitHub tarball, pinned / Ubuntu (*system*) | ✓ |
+| 15 | Beyond Compare (licence needed) | vendor .deb, pinned — *system* | ✓ |
 | **C** | **AI coding agents** | | |
-| 16 | Claude Code (+ sandbox: bubblewrap, socat, AppArmor profile) | Anthropic apt repo (channel `latest`) | ✓ |
+| 16 | Claude Code (`CLAUDE_CHANNEL`: latest or stable) | Anthropic installer, updates itself | ✓ |
 | 17 | Codex CLI | GitHub, pinned | ✓ |
 | 18 | Antigravity CLI (agy) | Google installer, ~/.local/bin | ✓ |
 | 68 | Muse Code (muse) | Meta installer, ~/.local/bin | ✓ |
 | 70 | OpenCode (opencode) | GitHub, pinned | ✓ |
 | 74 | `claude-<server>`: Claude Code on your own LLM servers (below) | this repo | ✓ |
 | **D** | **Git and GitHub** | | |
-| 19 | git | git-core PPA | ✓ |
-| 20 | GitHub CLI | GitHub apt repo | ✓ |
+| 19 | git | git-core PPA — *system* | ✓ |
+| 20 | GitHub CLI (also git's credential helper) | GitHub, pinned | ✓ |
 | 21 | git-lfs | GitHub, pinned | ✓ |
 | 22 | lazygit | GitHub, pinned | ✓ |
-| 23 | delta | GitHub .deb, pinned | |
+| 23 | delta | GitHub, pinned | |
 | 77 | gitleaks — credential scan; ai-core's push gate runs it before a push | GitHub, pinned | ✓ |
 | **E** | **Command-line tools** | | |
-| 24-29 | jq · yq · ripgrep · fd · fzf · bat | Ubuntu / GitHub, pinned | ✓ |
-| 30-32 | 7-Zip · Midnight Commander · curl, wget, tree, htop, openssl, unzip | Ubuntu | ✓ |
-| 76 | build-essential: gcc, g++, make — for npm and pip modules with native parts, Rust crates | Ubuntu | ✓ |
+| 24-29 | jq · yq · ripgrep · fd · fzf · bat | GitHub, pinned | ✓ |
+| 30-32 | 7-Zip · Midnight Commander · curl, wget, tree, htop, openssl, unzip | Ubuntu — *system* | ✓ |
+| 76 | build-essential: gcc, g++, make — for npm and pip modules with native parts, Rust crates | Ubuntu — *system* | ✓ |
 | **F** | **Languages** | | |
 | 33 | Node.js — only via nvm, newest LTS, set as default | nvm, pinned | ✓ |
 | 34 | yarn, pnpm | Corepack on the nvm Node | ✓ |
 | 35 | Python (newest) | uv, pinned | ✓ |
-| 36 | Go | go.dev tarball, pinned | ✓ |
-| 37 | Java (OpenJDK LTS) | Ubuntu (pulled in by 38/39) | |
+| 36 | Go | go.dev tarball, pinned, `~/.local/opt` | ✓ |
+| 37 | Java (Eclipse Temurin, LTS; `JAVA_HOME=~/.local/opt/jdk`) | Adoptium tarball, pinned (pulled in by 38/39) | |
 | 38 | Maven | Apache tarball, pinned | |
 | 39 | Flutter + Android SDK (newest platform, build-tools) | Google tarballs, pinned; Android CLI | ✓ |
 | 40 | Rust | rustup, pinned | |
-| 41 | .NET SDK | Ubuntu | |
+| 41 | .NET SDK (`DOTNET_ROOT=~/.local/opt/dotnet`) | Microsoft tarball, pinned | |
 | **G** | **Database clients** | | |
-| 42-45 | psql · mongosh · redis-cli · mysql | Ubuntu / GitHub .deb | ✓ |
+| 42-45 | psql · mongosh · redis-cli · mysql | Ubuntu (*system*) / MongoDB tarball | ✓ |
 | **H** | **Containers and Kubernetes** | | |
-| 46 | Docker CLI, buildx, compose | Docker apt repo | ✓ |
-| 47 | Docker Engine (no Docker Desktop) | Docker apt repo | ✓ |
-| 48 | kubectl | pkgs.k8s.io | ✓ |
-| 49 | helm | Helm apt repo | ✓ |
+| 46 | Docker CLI, buildx, compose | Docker apt repo — *system* | ✓ |
+| 47 | Docker Engine (no Docker Desktop); you in the `docker` group | Docker apt repo — *system* | ✓ |
+| 48 | kubectl | dl.k8s.io, pinned | ✓ |
+| 49 | helm | get.helm.sh, pinned | ✓ |
 | 50-51 | kind · k9s | GitHub, pinned | |
 | 52 | kubectx, kubens | GitHub, pinned | ✓ |
 | 53-55 | stern · krew · cmctl | GitHub, pinned | |
 | 56 | Argo CD CLI | GitHub, pinned | ✓ |
-| 57 | Tekton CLI (tkn) | GitHub .deb, pinned | ✓ |
+| 57 | Tekton CLI (tkn) | GitHub, pinned | ✓ |
 | 58 | Argo Workflows + Rollouts CLIs | GitHub, pinned | |
 | **I** | **Cloud** | | |
-| 59-60 | Azure CLI · gcloud | Microsoft / Google apt repos | ✓ |
-| 61-62 | terraform · vault | HashiCorp apt repo | ✓ |
+| 59-60 | Azure CLI · gcloud | PyPI via uv / Google tarball, pinned | ✓ |
+| 61-62 | terraform · vault | HashiCorp releases, pinned | ✓ |
 | 63 | mkcert | GitHub, pinned | ✓ |
 | **J** | **Setup** | | |
 | 64 | git identity (`GIT_USER_NAME`/`EMAIL` or asked) | | ✓ |
 | 65 | sign-ins: gh (+ git credentials), Claude Code, Codex, agy, Muse | | ✓ |
+| – | `DOCK`: the dock on a new machine (desktop entry ids) | your config | |
 
 ## Maintenance
 
 - **Newest versions:** `tools/pin-versions.sh > versions.conf.new`, review the
   diff against `versions.conf`, test, commit. Tools from apt repositories
-  (Chrome, Edge, VS Code, Claude Code, Docker, …) update with the system;
-  agy and Muse update when install runs again.
+  (Chrome, Edge, VS Code, Docker, …) update with `sudo apt upgrade`; Claude
+  Code and JetBrains Toolbox update themselves, agy and Muse when install runs
+  again.
 - **apt sources:** the files marked `# Managed by setup-ubuntu-workstation` in
   `/etc/apt/sources.list.d` belong to this script. Chrome, Edge, VS Code and
   Beyond Compare keep their own source there (`google-chrome`,
@@ -263,10 +276,11 @@ again. Nothing is removed when switched off.
 ## Layout
 
 ```
-setup.sh            entry point: install, login, doctor, config
-lib/common.sh       logging, config, downloads + checksums, apt repositories
-modules/NN-*.sh     one area each (repos, base, shell, terminal, apps, ai, …)
-templates/          files written to the machine (terminal and shell configs)
-versions.conf       pinned artifacts (URL + SHA-256), from tools/pin-versions.sh
-config.example.conf numbered switches, copied to /etc on the first run
+setup.sh            entry point: system (sudo), install, update, login, doctor, config
+lib/common.sh       logging, config, downloads + checksums, installs into the home, apt
+modules/05-system.sh, 10-repos.sh   the system part (sudo ./setup.sh system)
+modules/NN-*.sh     the rest, one area each (base, shell, terminal, apps, ai, …)
+templates/          files written to the machine (terminal and shell configs, AppArmor)
+versions.conf       pinned artifacts (URL + SHA-256/512), from tools/pin-versions.sh
+config.example.conf numbered switches, copied to ~/.config on the first run
 ```

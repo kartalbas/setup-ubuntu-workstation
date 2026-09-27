@@ -3,11 +3,11 @@
 # repository: CONFIGS_REPO=OWNER/NAME, cloned to ~/repos/<owner>/<name>, folder
 # setup-ubuntu-workstation/ in it; hosts/<hostname>/ holds a machine's own
 # copy of a file. The files are kept as they are, tokens included, so the
-# repository must be private. config.conf becomes this machine's config with
-# the next `sudo ./setup.sh install`, which also puts your files in place.
-# ssh/ holds your SSH keys (and ssh config) for ~/.ssh.
+# repository must be private. `./setup.sh install` puts them in place first,
+# config.conf included (it becomes this machine's config); ssh/ holds your SSH
+# keys (and ssh config) for ~/.ssh.
 #   ./setup.sh configs         pull the repository, put your files in place
-#   ./setup.sh configs save    copy your files back, commit, push
+#   ./setup.sh configs save    copy your files back (and the dock into DOCK), commit, push
 
 # path in the repository | path in your home | mode
 CONFIGS_FILES=(
@@ -29,23 +29,13 @@ configs_source() {
   if [[ -f "$sub/hosts/$host/$2" ]]; then printf '%s' "$sub/hosts/$host/$2"; else printf '%s' "$sub/$2"; fi
 }
 
-# configs_system — as root, during install: the repository's config.conf
-# becomes this machine's.
-configs_system() {
-  local dir f; dir="$(configs_dir)" || return 0
-  f="$(configs_source "$dir" config.conf)"
-  [[ -f "$f" ]] || return 0
-  atomic_write "$CONFIG_FILE" 0644 <"$f"
-  return 0
-}
-
-# configs_user — during install: your files put in place as you
-# (./setup.sh configs); without a GitHub login it only warns.
-configs_user() {
+# configs_early — at the start of install: your files from the config
+# repository, config.conf first; without a GitHub login (a new machine) it
+# only warns and the install goes on with the config there is.
+configs_early() {
   [[ "$(cfg_get CONFIGS_REPO)" == */* ]] || return 0
-  as_user "$REPO_ROOT/setup.sh" configs \
-    || log_warn "Your files from $(cfg_get CONFIGS_REPO) are not in place (signed in to GitHub? ./setup.sh login), then: ./setup.sh configs"
-  return 0
+  configs_run apply soft || true
+  cfg_load
 }
 
 # configs_ssh apply|save DIR — your SSH keys. apply: every file of ssh/ in the
@@ -84,27 +74,33 @@ configs_ssh() {
   return 0
 }
 
-configs_run() { # [save]
-  local mode="${1:-apply}" repo dir entry src dst perm f host
+configs_run() { # [apply|save] [soft]
+  local mode="${1:-apply}" soft="${2:-}" repo dir entry src dst perm f host
   repo="$(cfg_get CONFIGS_REPO)"
-  [[ "$repo" == */* ]] || die "No config repository set: sudo ./setup.sh config set CONFIGS_REPO OWNER/NAME"
+  [[ "$repo" == */* ]] || die "No config repository set: ./setup.sh config set CONFIGS_REPO OWNER/NAME"
   dir="$(configs_dir)" host="$(hostname -s)"
   log_step "Your settings: $repo"
-  if [[ ! -d "$dir/.git" ]]; then run git clone -q "https://github.com/$repo.git" "$dir" || die "Could not clone $repo (signed in to GitHub? ./setup.sh login)"; fi
+  if [[ ! -d "$dir/.git" ]] && ! run git clone -q "https://github.com/$repo.git" "$dir"; then
+    [[ -n "$soft" ]] || die "Could not clone $repo (signed in to GitHub? ./setup.sh login)"
+    log_warn "Could not clone $repo yet (sign in to GitHub: ./setup.sh login), then: ./setup.sh install"
+    return 1
+  fi
   git -C "$dir" pull -q --ff-only 2>/dev/null || log_warn "$repo not updated (offline or local changes) — using it as it is"
   case "$mode" in
     apply)
-      for entry in "${CONFIGS_FILES[@]}"; do
-        IFS='|' read -r src dst perm <<<"$entry"
+      for entry in "config.conf|$CONFIG_FILE|0644" "${CONFIGS_FILES[@]}"; do
+        IFS='|' read -r src dst perm <<<"$entry"; [[ "$dst" == /* ]] || dst="$TARGET_HOME/$dst"
         f="$(configs_source "$dir" "$src")"; [[ -f "$f" ]] || continue
-        mkdir -p "$(dirname "$TARGET_HOME/$dst")"
-        cmp -s "$f" "$TARGET_HOME/$dst" || install -m "$perm" "$f" "$TARGET_HOME/$dst"
-        log_ok "~/$dst"
+        mkdir -p "$(dirname "$dst")"
+        cmp -s "$f" "$dst" || install -m "$perm" "$f" "$dst"
+        log_ok "${dst/#$TARGET_HOME/\~}"
       done
       configs_ssh apply "$dir"
-      claude_llm_links
-      log_info "config.conf is used by the next: sudo ./setup.sh install" ;;
+      claude_llm_links ;;
     save)
+      # The dock as it is now, for the next machine (DOCK in config.conf).
+      local dock; dock="$(dock_current)"
+      [[ -z "$dock" || "$dock" == "$(cfg_get DOCK)" ]] || cfg_set DOCK "$dock"
       for entry in "${CONFIGS_FILES[@]}" "config.conf|$CONFIG_FILE|0644"; do
         IFS='|' read -r src dst perm <<<"$entry"; [[ "$dst" == /* ]] || dst="$TARGET_HOME/$dst"
         [[ -f "$dst" ]] || continue

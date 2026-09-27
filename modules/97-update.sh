@@ -1,8 +1,10 @@
 # shellcheck shell=bash
-# modules/97-update.sh — `sudo ./setup.sh update [--all|--list]`: every enabled
-# tool with the version installed and the newest one available; update all
-# that is newer (Enter) or a selection. Newer pinned tools are recorded in
-# versions.local.conf, so install keeps them.
+# modules/97-update.sh — `./setup.sh update [--all|--list]`: every enabled
+# tool in the home with the version installed and the newest one available;
+# update all that is newer (Enter) or a selection. Newer pinned tools are
+# recorded in versions.local.conf, so install keeps them. System packages
+# (Chrome, Edge, VS Code, Docker, …) come with `sudo apt upgrade`; Ghostty and
+# Beyond Compare, when newer, with `sudo ./setup.sh system`.
 
 # Config key of a pinned tool, where it differs from its name in versions.conf.
 declare -gA PIN_KEY=(
@@ -11,40 +13,53 @@ declare -gA PIN_KEY=(
   [NVM]=NODE [UV]=PYTHON [ANDROID_CMDLINE_TOOLS]=FLUTTER [RUSTUP]=RUST
   [KUBENS]=KUBECTX [ARGO_ROLLOUTS]=ARGO
 )
+# _pin_on PIN — the tool behind a pinned entry is enabled.
+_pin_on() {
+  case "$1" in
+    JAVA) on JAVA || on MAVEN || on FLUTTER ;;
+    UV)   on PYTHON || on AZURE_CLI ;;
+    *)    on "${PIN_KEY[$1]:-$1}" ;;
+  esac
+}
 # How a pinned tool gets its version (the same calls install makes).
 declare -gA PIN_APPLY=(
-  [KITTY]="kitty_install" [GHOSTTY]="deb_install GHOSTTY ghostty" [ANTIGRAVITY]="antigravity_ide_install"
-  [ANTIGRAVITY_HUB]="antigravity_hub_install"
-  [PWSH]="deb_install PWSH powershell-lts" [STARSHIP]="bin_install STARSHIP starship"
-  [ZOXIDE]="deb_install ZOXIDE zoxide" [QUAKE_TERMINAL]="quake_terminal_install"
-  [NERDFONT_CASCADIACODE]="nerd_fonts_install" [NERDFONT_CASCADIAMONO]="nerd_fonts_install"
-  [NERDFONT_FIRACODE]="nerd_fonts_install" [NERDFONT_JETBRAINSMONO]="nerd_fonts_install"
-  [NEOVIM]="tar_app_install NEOVIM nvim bin/nvim"
-  [JETBRAINS_TOOLBOX]="jetbrains_toolbox_install"
-  [BCOMPARE]="deb_install BCOMPARE bcompare"
+  [KITTY]="kitty_install" [GHOSTTY]="system_note Ghostty" [ANTIGRAVITY]="antigravity_ide_install"
+  [ANTIGRAVITY_HUB]="antigravity_hub_install" [PWSH]="tar_app_install --flat PWSH pwsh pwsh"
+  [STARSHIP]="bin_install STARSHIP starship" [ZOXIDE]="bin_install ZOXIDE zoxide"
+  [QUAKE_TERMINAL]="quake_terminal_install" [CASCADIA]="fonts_apply"
+  [NERDFONT_CASCADIACODE]="fonts_apply" [NERDFONT_CASCADIAMONO]="fonts_apply"
+  [NERDFONT_FIRACODE]="fonts_apply" [NERDFONT_JETBRAINSMONO]="fonts_apply"
+  [NEOVIM]="tar_app_install NEOVIM nvim bin/nvim" [JETBRAINS_TOOLBOX]="jetbrains_toolbox_install"
+  [BCOMPARE]="system_note 'Beyond Compare'"
   [CODEX]="bin_install CODEX codex codex-x86_64-unknown-linux-musl" [OPENCODE]="bin_install OPENCODE opencode"
-  [GIT_LFS]="bin_install GIT_LFS git-lfs" [LAZYGIT]="bin_install LAZYGIT lazygit"
-  [GITLEAKS]="bin_install GITLEAKS gitleaks"
-  [DELTA]="deb_install DELTA git-delta" [YQ]="bin_install YQ yq" [RIPGREP]="deb_install RIPGREP ripgrep"
-  [FD]="deb_install FD fd" [FZF]="bin_install FZF fzf" [BAT]="deb_install BAT bat"
-  [NVM]="node_setup" [UV]="python_setup" [GO]="go_setup" [MAVEN]="maven_setup"
+  [GH]="bin_install GH gh" [GIT_LFS]="bin_install GIT_LFS git-lfs" [LAZYGIT]="bin_install LAZYGIT lazygit"
+  [GITLEAKS]="bin_install GITLEAKS gitleaks" [DELTA]="bin_install DELTA delta"
+  [JQ]="bin_install JQ jq" [YQ]="bin_install YQ yq" [RIPGREP]="bin_install RIPGREP rg"
+  [FD]="bin_install FD fd" [FZF]="bin_install FZF fzf" [BAT]="bin_install BAT bat"
+  [NVM]="node_setup" [UV]="python_setup" [GO]="tar_app_install GO go bin/go gofmt=bin/gofmt"
+  [JAVA]="java_setup" [MAVEN]="tar_app_install MAVEN mvn bin/mvn" [DOTNET]="dotnet_setup"
   [FLUTTER]="flutter_setup" [ANDROID_CMDLINE_TOOLS]="flutter_setup" [RUSTUP]="rust_setup"
-  [MONGOSH]="deb_install MONGOSH mongodb-mongosh"
-  [KUBECTL]="repos_setup; DEBIAN_FRONTEND=noninteractive run apt-get install -y -q --only-upgrade kubectl"
+  [MONGOSH]="tar_app_install MONGOSH mongosh bin/mongosh"
+  [KUBECTL]="bin_install KUBECTL kubectl" [HELM]="bin_install HELM helm"
   [KUBECTX]="bin_install KUBECTX kubectx" [KUBENS]="bin_install KUBENS kubens"
-  [KIND]="bin_install KIND kind" [K9S]="deb_install K9S k9s" [STERN]="bin_install STERN stern"
+  [KIND]="bin_install KIND kind" [K9S]="bin_install K9S k9s" [STERN]="bin_install STERN stern"
   [KREW]="krew_setup" [CMCTL]="bin_install CMCTL cmctl" [ARGOCD]="bin_install ARGOCD argocd"
-  [TKN]="deb_install TKN tektoncd-cli" [ARGO]="bin_install ARGO argo"
-  [ARGO_ROLLOUTS]="bin_install ARGO_ROLLOUTS kubectl-argo-rollouts" [MKCERT]="bin_install MKCERT mkcert"
+  [TKN]="bin_install TKN tkn" [ARGO]="bin_install ARGO argo"
+  [ARGO_ROLLOUTS]="bin_install ARGO_ROLLOUTS kubectl-argo-rollouts"
+  [AZURE_CLI]="azure_cli_install" [GCLOUD]="gcloud_install"
+  [TERRAFORM]="bin_install TERRAFORM terraform" [VAULT]="bin_install VAULT vault"
+  [MKCERT]="bin_install MKCERT mkcert"
 )
-# Packages from apt repositories, per config key.
-APT_TOOLS=(
-  "GIT git" "GH gh" "CHROME google-chrome-stable" "EDGE microsoft-edge-stable" "VSCODE code"
-  "CLAUDE_CODE claude-code" "PTYXIS ptyxis" "NEMO nemo"
-  "DOCKER_CLI docker-ce-cli docker-buildx-plugin docker-compose-plugin"
-  "DOCKER_ENGINE docker-ce containerd.io" "KUBECTL kubectl" "HELM helm"
-  "AZURE_CLI azure-cli" "GCLOUD google-cloud-cli" "TERRAFORM terraform" "VAULT vault"
-)
+# fonts_apply — fonts at their pinned versions, the font cache renewed.
+fonts_apply() {
+  FONTS_CHANGED=0
+  on CASCADIA && cascadia_install
+  on NERD_FONTS && nerd_fonts_install
+  if (( FONTS_CHANGED )); then run fc-cache -f "$FONT_DIR" >/dev/null; fi
+  return 0
+}
+# system_note LABEL — a system package's newer version is recorded; root installs it.
+system_note() { log_info "$1: the newer version is recorded — it comes with: sudo ./setup.sh system"; }
 
 U_LABEL=() U_HAVE=() U_NEW=() U_KIND=() U_ARG=() U_UPD=()
 declare -gA NEWV=()
@@ -55,11 +70,9 @@ _newer() { [[ -n "$1" && -n "$2" && "$1" != "$2" ]] && dpkg --compare-versions "
 _flag() { if "$@"; then echo 1; else echo 0; fi; }
 
 update_run() { # [--all|--list]
-  local mode="${1:-}" answer n a i cmd p ubuntu="" apt_pkgs=() pins=() pick=()
+  local mode="${1:-}" answer n a i cmd p pins=() pick=()
   [[ -z "$mode" || "$mode" == --all || "$mode" == --list ]] || die "update [--all|--list]"
   log_step "Updates for $TARGET_USER"
-  apt_update
-  _updates_apt
   _updates_pinned
   _updates_other
   _updates_show
@@ -67,7 +80,7 @@ update_run() { # [--all|--list]
   (( ${#U_SHOWN[@]} )) || return 0
   if [[ "$mode" == --all ]]; then answer=""
   else
-    [[ -t 0 ]] || die "No terminal: sudo ./setup.sh update --all (or --list)"
+    [[ -t 0 ]] || die "No terminal: ./setup.sh update --all (or --list)"
     read -rp "Update: Enter = all of them, numbers like 2 5-7, q = nothing: " answer
   fi
   [[ "$answer" == q* ]] && return 0
@@ -87,21 +100,13 @@ update_run() { # [--all|--list]
   fi
   for i in "${pick[@]}"; do
     case "${U_KIND[$i]}" in
-      ubuntu) ubuntu="${U_ARG[$i]}"; [[ "$ubuntu" == - ]] && ubuntu=" " ;;
-      apt)    apt_pkgs+=("${U_ARG[$i]}") ;;
       pin)    [[ "${U_UPD[$i]}" == 1 ]] && pins+=("${U_ARG[$i]}") ;;
-      snap)   run snap refresh "${U_ARG[$i]}" ;;
       node)   node_setup ;;
       python) as_user uv python install --default "${U_ARG[$i]}" >/dev/null && log_ok "Python ${U_ARG[$i]}" ;;
       agy)    vendor_installer "Antigravity CLI (agy)" "https://antigravity.google/cli/install.sh" agy ;;
       muse)   vendor_installer "Muse Code (muse)" "https://dev.meta.ai/install.sh" muse ;;
     esac
   done
-  if [[ -n "${ubuntu// /}" ]] || (( ${#apt_pkgs[@]} )); then
-    # shellcheck disable=SC2086  # $ubuntu: package names
-    DEBIAN_FRONTEND=noninteractive run apt-get install -y -q --only-upgrade $ubuntu "${apt_pkgs[@]}"
-  fi
-  [[ -n "$ubuntu" ]] && DEBIAN_FRONTEND=noninteractive run apt-get autoremove --purge -y -q
   if (( ${#pins[@]} )); then
     # URL and checksum of just the chosen tools (the check only had versions).
     local tmp; tmp="$(mktemp)"
@@ -120,23 +125,12 @@ update_run() { # [--all|--list]
   log_ok "Update done"
 }
 
-_updates_apt() {
-  local entry key pkg have cand others=() managed=" " unused
-  for entry in "${APT_TOOLS[@]}"; do
-    key="${entry%% *}"; on "$key" || continue
-    for pkg in ${entry#* }; do
-      have="$(installed_version "$pkg")"; [[ -n "$have" ]] || continue
-      cand="$(apt-cache policy "$pkg" 2>/dev/null | awk '/Candidate:/ {print $2}')"
-      managed+="$pkg "
-      _u_add "$pkg" "$(_short "$have")" "$(_short "$cand")" apt "$pkg" "$(_flag _newer "$cand" "$have")"
-    done
-  done
-  while read -r pkg; do
-    [[ "$managed" == *" $pkg "* ]] || others+=("$pkg")
-  done < <(apt list --upgradable 2>/dev/null | awk -F/ 'NR > 1 {print $1}')
-  unused="$(apt-get -s autoremove 2>/dev/null | grep -c '^Remv' || true)"
-  _u_add "Ubuntu (all other packages)" "" "${#others[@]} newer, $unused unused" ubuntu "${others[*]:--}" \
-    "$(( ${#others[@]} + unused > 0 ))"
+# _updates_system — the system packages, as a note: root updates them.
+SYSTEM_NOTE=""
+_updates_system() {
+  local n
+  n="$(apt list --upgradable 2>/dev/null | awk 'NR > 1' | wc -l)"
+  SYSTEM_NOTE="System packages (Ubuntu, Chrome, Edge, VS Code, Docker, …): $n newer as of the last apt update — sudo apt update && sudo apt upgrade"
 }
 
 _updates_pinned() {
@@ -151,19 +145,17 @@ _updates_pinned() {
   while IFS= read -r line; do
     [[ "$line" =~ ^([A-Z0-9_]+)_(VERSION|MINOR)= ]] || continue
     p="${BASH_REMATCH[1]}" k="${BASH_REMATCH[1]}_${BASH_REMATCH[2]}"
-    key="${PIN_KEY[$p]:-$p}"; on "$key" || continue
+    _pin_on "$p" || continue
     [[ "$p" == JETBRAINS_TOOLBOX ]] && continue   # updates itself
-    label="${p,,}"; label="${label//_/-}"; [[ "$p" == KUBECTL ]] && label="kubectl channel (pkgs.k8s.io)"
+    label="${p,,}"; label="${label//_/-}"
     _u_add "$label" "${VER[$k]:-}" "${NEWV[$k]:-?}" pin "$p" "$(_flag _newer "${NEWV[$k]:-}" "${VER[$k]:-}")"
   done <"$REPO_ROOT/versions.conf"
 }
 
 _updates_other() {
   local have new
-  if on CHROMIUM && snap list chromium >/dev/null 2>&1; then
-    have="$(snap list chromium | awk 'NR == 2 {print $2}')"
-    new="$(snap refresh --list 2>/dev/null | awk '$1 == "chromium" {print $2}')"
-    _u_add "chromium (snap)" "$have" "${new:-$have}" snap chromium "$(_flag test -n "$new")"
+  if on CLAUDE_CODE; then
+    _u_add "claude" "$(user_out claude --version 2>/dev/null | head -1 | cut -d' ' -f1)" "(updates itself)" claude - 0
   fi
   if on NODE; then
     have="$(user_out bash -c '. "$HOME/.nvm/nvm.sh" >/dev/null 2>&1 && nvm version default' 2>/dev/null)"
@@ -200,6 +192,7 @@ _updates_show() {
     (( ${#U_HAVE[$i]} > w2 )) && w2=${#U_HAVE[$i]}
   done
   (( ${#unknown[@]} )) && log_warn "Newest version unknown: ${unknown[*]}"
+  _updates_system; log_info "$SYSTEM_NOTE"
   if (( ${#U_SHOWN[@]} == 0 )); then
     log_ok "Everything is up to date (${#U_LABEL[@]} tools checked)"; return 0
   fi

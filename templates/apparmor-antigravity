@@ -1,0 +1,18 @@
+# Managed by setup-ubuntu-workstation: Antigravity (the IDE and 2.0), unpacked
+# in ~/.local/opt, may use Chromium's sandbox (user namespaces) — as Ubuntu's
+# own profiles allow it for VS Code and Chrome. It confines nothing else.
+
+abi <abi/5.0>,
+include <tunables/global>
+
+profile antigravity-ide @{HOME}/.local/opt/antigravity-ide-*/antigravity-ide flags=(unconfined) {
+  userns,
+  @{exec_path} mr,
+  include if exists <local/antigravity-ide>
+}
+
+profile antigravity-hub @{HOME}/.local/opt/antigravity-hub-*/antigravity flags=(unconfined) {
+  userns,
+  @{exec_path} mr,
+  include if exists <local/antigravity-hub>
+}

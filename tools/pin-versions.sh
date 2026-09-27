@@ -93,9 +93,10 @@ say "# Ghostty has no official Linux build: the Ubuntu .deb that ghostty.org lis
 say "# (community-built, github.com/mkasberg/ghostty-ubuntu); version = upstream part."
 gh_asset GHOSTTY mkasberg/ghostty-ubuntu '^ghostty_[0-9.]+-0\.ppa[0-9]+_amd64_26\.04\.deb$' \
   | sed -E 's/^(GHOSTTY_VERSION="[0-9.]+)-[^"]*"/\1"/'
-gh_asset PWSH PowerShell/PowerShell '^powershell-lts_[0-9.]+-1\.deb_amd64\.deb$'
+gh_asset PWSH PowerShell/PowerShell '^powershell-[0-9.]+-linux-x64\.tar\.gz$'
 gh_asset STARSHIP starship/starship '^starship-x86_64-unknown-linux-gnu\.tar\.gz$'
-gh_asset ZOXIDE ajeetdsouza/zoxide '^zoxide_[0-9.]+-1_amd64\.deb$'
+gh_asset ZOXIDE ajeetdsouza/zoxide '^zoxide-[0-9.]+-x86_64-unknown-linux-musl\.tar\.gz$'
+gh_asset CASCADIA microsoft/cascadia-code '^CascadiaCode-[0-9.]+\.zip$'
 for f in CascadiaCode CascadiaMono FiraCode JetBrainsMono; do
   gh_asset "NERDFONT_$(tr '[:lower:]' '[:upper:]' <<<"$f")" ryanoasis/nerd-fonts "^${f}\.tar\.xz\$"
 done
@@ -136,22 +137,24 @@ if want ANTIGRAVITY_HUB; then
   url_pin ANTIGRAVITY_HUB "$(sed -E 's#.*/antigravity-hub/([0-9.]+)-[0-9]+/.*#\1#' <<<"$hub_url")" "$hub_url"
 fi
 
-say "# ---- C. AI coding agents (Claude Code: apt; agy and Muse: vendor installers)"
+say "# ---- C. AI coding agents (Claude Code, agy and Muse: vendor installers)"
 gh_asset CODEX openai/codex '^codex-x86_64-unknown-linux-musl\.tar\.gz$'
 gh_asset OPENCODE anomalyco/opencode '^opencode-linux-x64\.tar\.gz$'
 
 say "# ---- D. Git"
+gh_asset GH cli/cli '^gh_[0-9.]+_linux_amd64\.tar\.gz$'
 gh_asset GIT_LFS git-lfs/git-lfs '^git-lfs-linux-amd64-v[0-9.]+\.tar\.gz$'
 gh_asset LAZYGIT jesseduffield/lazygit '^lazygit_[0-9.]+_linux_x86_64\.tar\.gz$'
-gh_asset DELTA dandavison/delta '^git-delta_[0-9.]+_amd64\.deb$'
+gh_asset DELTA dandavison/delta '^delta-[0-9.]+-x86_64-unknown-linux-musl\.tar\.gz$'
 gh_asset GITLEAKS gitleaks/gitleaks '^gitleaks_[0-9.]+_linux_x64\.tar\.gz$'
 
 say "# ---- E. Command-line tools"
+gh_asset JQ jqlang/jq '^jq-linux-amd64$' | sed -E 's/^JQ_VERSION="jq-/JQ_VERSION="/'
 gh_asset YQ mikefarah/yq '^yq_linux_amd64$'
-gh_asset RIPGREP BurntSushi/ripgrep '^ripgrep_[0-9.]+-1_amd64\.deb$'
-gh_asset FD sharkdp/fd '^fd_[0-9.]+_amd64\.deb$'
+gh_asset RIPGREP BurntSushi/ripgrep '^ripgrep-[0-9.]+-x86_64-unknown-linux-musl\.tar\.gz$'
+gh_asset FD sharkdp/fd '^fd-v[0-9.]+-x86_64-unknown-linux-musl\.tar\.gz$'
 gh_asset FZF junegunn/fzf '^fzf-[0-9.]+-linux_amd64\.tar\.gz$'
-gh_asset BAT sharkdp/bat '^bat_[0-9.]+_amd64\.deb$'
+gh_asset BAT sharkdp/bat '^bat-v[0-9.]+-x86_64-unknown-linux-musl\.tar\.gz$'
 
 say "# ---- F. Languages"
 if want NVM; then
@@ -166,6 +169,15 @@ r = json.load(sys.stdin)[0]
 f = [x for x in r["files"] if x["os"] == "linux" and x["arch"] == "amd64" and x["kind"] == "archive"][0]
 print(r["version"][2:], f["sha256"])')
 url_pin GO "$go_ver" "https://go.dev/dl/go${go_ver}.linux-amd64.tar.gz" "$go_sha"
+fi
+if want JAVA; then
+# Eclipse Temurin, the newest LTS (Adoptium's API gives the SHA-256).
+java_lts="$(curl -fsSL https://api.adoptium.net/v3/info/available_releases | python3 -c 'import json,sys; print(json.load(sys.stdin)["most_recent_lts"])')"
+read -r java_ver java_url java_sha < <(curl -fsSL "https://api.adoptium.net/v3/assets/latest/$java_lts/hotspot?architecture=x64&image_type=jdk&os=linux&vendor=eclipse" | python3 -c '
+import json, sys
+a = json.load(sys.stdin)[0]
+print(a["version"]["openjdk_version"].removesuffix("-LTS"), a["binary"]["package"]["link"], a["binary"]["package"]["checksum"])')
+url_pin JAVA "$java_ver" "$java_url" "$java_sha"
 fi
 if want MAVEN; then
 mvn_ver="$(curl -fsSL https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml | grep -oE '<version>3\.[0-9]+\.[0-9]+</version>' | tail -1 | grep -oE '3\.[0-9.]+[0-9]')"
@@ -205,25 +217,66 @@ url_pin RUSTUP "$rs_ver" "https://static.rust-lang.org/rustup/archive/$rs_ver/x8
   "$(curl -fsSL "https://static.rust-lang.org/rustup/archive/$rs_ver/x86_64-unknown-linux-gnu/rustup-init.sha256" | cut -d' ' -f1)"
 fi
 
+if want DOTNET; then
+# .NET SDK: the newest LTS channel still supported (Microsoft gives the SHA-512).
+read -r dn_ver dn_url dn_sha < <(curl -fsSL https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json | python3 -c '
+import json, sys, urllib.request
+idx = [c for c in json.load(sys.stdin)["releases-index"] if c["release-type"] == "lts" and c["support-phase"] == "active"]
+ch = sorted(idx, key=lambda c: [int(x) for x in c["channel-version"].split(".")])[-1]
+rel = json.load(urllib.request.urlopen(ch["releases.json"]))
+sdk = rel["releases"][0]["sdk"]
+f = [x for x in sdk["files"] if x["name"] == "dotnet-sdk-linux-x64.tar.gz"][0]
+print(sdk["version"], f["url"], f["hash"])')
+if (( CHECK )); then say "DOTNET_VERSION=\"$dn_ver\""; else
+say "DOTNET_VERSION=\"$dn_ver\""; say "DOTNET_URL=\"$dn_url\""; say "DOTNET_SHA512=\"$dn_sha\""; say ""; fi
+fi
+
 say "# ---- G. Database clients"
-gh_asset MONGOSH mongodb-js/mongosh '^mongodb-mongosh_[0-9.]+_amd64\.deb$'
+gh_asset MONGOSH mongodb-js/mongosh '^mongosh-[0-9.]+-linux-x64\.tgz$'
 
 say "# ---- H. Kubernetes and CI/CD"
 if want KUBECTL; then
-  say "KUBECTL_MINOR=\"$(curl -fsSL https://dl.k8s.io/release/stable.txt | grep -oE '^v[0-9]+\.[0-9]+' | tr -d v)\""
-  say ""
+kc="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
+url_pin KUBECTL "${kc#v}" "https://dl.k8s.io/release/$kc/bin/linux/amd64/kubectl" \
+  "$( (( CHECK )) || curl -fsSL "https://dl.k8s.io/release/$kc/bin/linux/amd64/kubectl.sha256")"
+fi
+if want HELM; then
+# Helm's release archives are on get.helm.sh (not on GitHub), each with its .sha256sum.
+hl="$(latest_tag helm/helm)"
+url_pin HELM "${hl#v}" "https://get.helm.sh/helm-$hl-linux-amd64.tar.gz" \
+  "$( (( CHECK )) || curl -fsSL "https://get.helm.sh/helm-$hl-linux-amd64.tar.gz.sha256sum" | cut -d' ' -f1)"
 fi
 gh_asset KUBECTX ahmetb/kubectx '^kubectx_v[0-9.]+_linux_x86_64\.tar\.gz$'
 gh_asset KUBENS ahmetb/kubectx '^kubens_v[0-9.]+_linux_x86_64\.tar\.gz$'
 gh_asset KIND kubernetes-sigs/kind '^kind-linux-amd64$'
-gh_asset K9S derailed/k9s '^k9s_linux_amd64\.deb$'
+gh_asset K9S derailed/k9s '^k9s_Linux_amd64\.tar\.gz$'
 gh_asset STERN stern/stern '^stern_[0-9.]+_linux_amd64\.tar\.gz$'
 gh_asset KREW kubernetes-sigs/krew '^krew-linux_amd64\.tar\.gz$'
 gh_asset CMCTL cert-manager/cmctl '^cmctl_linux_amd64\.tar\.gz$'
 gh_asset ARGOCD argoproj/argo-cd '^argocd-linux-amd64$'
-gh_asset TKN tektoncd/cli '^tektoncd-cli-[0-9.]+_Linux-64bit\.deb$'
+gh_asset TKN tektoncd/cli '^tkn_[0-9.]+_Linux_x86_64\.tar\.gz$'
 gh_asset ARGO argoproj/argo-workflows '^argo-linux-amd64\.gz$'
 gh_asset ARGO_ROLLOUTS argoproj/argo-rollouts '^kubectl-argo-rollouts-linux-amd64$'
 
 say "# ---- I. Cloud"
 gh_asset MKCERT FiloSottile/mkcert '^mkcert-v[0-9.]+-linux-amd64$'
+# HashiCorp's release zips, checked against their SHA256SUMS.
+for hc in terraform vault; do
+  want "${hc^^}" || continue
+  hc_ver="$(curl -fsSL "https://checkpoint-api.hashicorp.com/v1/check/$hc" | python3 -c 'import json,sys; print(json.load(sys.stdin)["current_version"])')"
+  hc_zip="${hc}_${hc_ver}_linux_amd64.zip"
+  url_pin "${hc^^}" "$hc_ver" "https://releases.hashicorp.com/$hc/$hc_ver/$hc_zip" \
+    "$( (( CHECK )) || curl -fsSL "https://releases.hashicorp.com/$hc/$hc_ver/${hc}_${hc_ver}_SHA256SUMS" | awk -v f="$hc_zip" '$2 == f {print $1}')"
+done
+if want GCLOUD; then
+# Google Cloud CLI: the newest version of its "rapid" channel, the Linux tarball.
+gc_ver="$(curl -fsSL https://dl.google.com/dl/cloudsdk/channels/rapid/components-2.json | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')"
+url_pin GCLOUD "$gc_ver" "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-$gc_ver-linux-x86_64.tar.gz"
+fi
+if want AZURE_CLI; then
+# Azure CLI: Microsoft's azure-cli package on PyPI, installed with uv (which
+# checks the package hashes PyPI publishes), on this Python.
+say "AZURE_CLI_VERSION=\"$(curl -fsSL https://pypi.org/pypi/azure-cli/json | python3 -c 'import json,sys; print(json.load(sys.stdin)["info"]["version"])')\""
+(( CHECK )) || say "AZURE_CLI_PYTHON=\"3.13\""
+say ""
+fi

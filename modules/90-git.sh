@@ -1,6 +1,7 @@
 # shellcheck shell=bash
-# modules/90-git.sh — git identity (J64). Credentials never go into a plain
-# text file: `gh auth setup-git` (run by the logins) makes gh git's helper.
+# modules/90-git.sh — git identity (J64) and gh as git's credential helper.
+# Credentials never go into a plain text file: `gh auth setup-git` makes gh
+# git's helper.
 
 # git_identity [ask] — user.name and user.email: GIT_USER_NAME / GIT_USER_EMAIL
 # from the config when set; else, when there is none yet, the signed-in GitHub
@@ -13,8 +14,8 @@ git_identity() {
   cur_email="$(user_out git config --global user.email 2>/dev/null || true)"
   name="$(cfg_get GIT_USER_NAME)" email="$(cfg_get GIT_USER_EMAIL)"
   if [[ -z "$name$email$cur_name$cur_email" ]]; then
-    # gh keeps its token in the keyring: reach the user's session for it.
-    (( EUID == 0 )) && mapfile -t env < <(user_gui_env)
+    # gh keeps its token in the keyring: reach the desktop session for it.
+    mapfile -t env < <(user_gui_env)
     suggestion="$(user_out env "${env[@]}" gh api user \
       --jq '"\(.name // .login)|\(.id)+\(.login)@users.noreply.github.com"' 2>/dev/null || true)"
     if [[ "$suggestion" == *"|"* ]]; then name="${suggestion%%|*}" email="${suggestion#*|}"; fi
@@ -35,4 +36,19 @@ git_identity() {
   else
     log_info "git identity not set — ./setup.sh login asks for it (after the GitHub sign-in)"
   fi
+  gh_git_helper
+}
+
+# gh_git_helper — once signed in to GitHub, gh is git's credential helper,
+# written with the path of this gh (a helper that names another gh, one that
+# is gone, would leave git without credentials).
+gh_git_helper() {
+  on GH || return 0
+  local env=() helpers
+  mapfile -t env < <(user_gui_env)
+  user_out env "${env[@]}" gh auth status >/dev/null 2>&1 || return 0
+  helpers="$(user_out git config --global --get-all credential.https://github.com.helper 2>/dev/null || true)"
+  [[ "$helpers" == *"$BIN_DIR/gh auth git-credential"* ]] && return 0
+  as_user env "${env[@]}" gh auth setup-git
+  log_ok "git uses gh ($BIN_DIR/gh) for GitHub"
 }

@@ -32,8 +32,10 @@ if ($alias -match '^v\d') {
     Add-PathFront (Join-Path $nvmDir "versions/node/$alias/bin")
 }
 Add-PathFront (Join-Path $HOME '.local/bin')
-Add-PathFront '/usr/local/go/bin'
 Add-PathFront (Join-Path $HOME 'go/bin')
+# Java (Temurin) and .NET from ~/.local/opt, as in bash.
+if (Test-Path (Join-Path $HOME '.local/opt/jdk')) { $env:JAVA_HOME = Join-Path $HOME '.local/opt/jdk' }
+if (Test-Path (Join-Path $HOME '.local/opt/dotnet')) { $env:DOTNET_ROOT = Join-Path $HOME '.local/opt/dotnet' }
 if (Test-Path (Join-Path $HOME '.local/share/flutter/bin')) {
     $env:ANDROID_HOME = Join-Path $HOME 'Android/Sdk'
     Add-PathFront (Join-Path $env:ANDROID_HOME 'platform-tools')

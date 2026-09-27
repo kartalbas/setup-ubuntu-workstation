@@ -1,14 +1,10 @@
 # shellcheck shell=bash
-# modules/75-databases.sh — database clients (G42-45). Servers belong in
-# containers (docker run postgres/mongo/redis/mysql), not on the workstation.
+# modules/75-databases.sh — database clients (G42-45). psql, redis-cli and
+# mysql are Ubuntu packages (system part); mongosh is MongoDB's tarball, in
+# the home.
 
 databases_setup() {
   log_step "Database clients"
-  local pkgs=()
-  on PSQL && pkgs+=(postgresql-client)
-  on REDIS_CLI && pkgs+=(redis-tools)
-  on MYSQL_CLIENT && pkgs+=(mysql-client)
-  (( ${#pkgs[@]} )) && apt_install "${pkgs[@]}"
-  on MONGOSH && deb_install MONGOSH mongodb-mongosh
+  on MONGOSH && tar_app_install MONGOSH mongosh bin/mongosh
   return 0
 }
