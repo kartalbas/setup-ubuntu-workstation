@@ -91,6 +91,7 @@ install_all() {
   containers_setup    # 80-containers: Docker, Kubernetes, CI/CD CLIs
   cloud_setup         # 85-cloud:      Azure, gcloud, terraform, vault, mkcert
   git_identity        # 90-git:        git user name / e-mail
+  configs_user        # 92-configs:    your files from your config repository (SSH keys too)
   log_step "Done"
   log_ok "Installed. Log out and in once (new groups, fonts, default terminal)."
   if on LOGINS; then

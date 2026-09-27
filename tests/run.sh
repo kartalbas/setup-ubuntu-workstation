@@ -96,6 +96,19 @@ X="a&b"; mkdir -p "$tmp/templates"; printf '@X@' >"$tmp/templates/t"
 eq "render keeps & literal" "$(REPO_ROOT="$tmp" render t)" "a&b"
 ( unset KITTY_SHELL; render kitty.conf ) >/dev/null 2>&1 && bad "missing value accepted" || ok "render fails on a missing value"
 
+echo "ssh keys (configs)"
+repo="$tmp/cfgrepo" home="$tmp/home"; mkdir -p "$repo/setup-ubuntu-workstation/ssh" "$home"
+printf 'KEY\n' >"$repo/setup-ubuntu-workstation/ssh/id_test"; printf 'PUB\n' >"$repo/setup-ubuntu-workstation/ssh/id_test.pub"
+( TARGET_HOME="$home"; configs_ssh apply "$repo" ) >/dev/null 2>&1
+eq "keys land in ~/.ssh, private 0600, .pub 0644" "$(stat -c %a "$home/.ssh" "$home/.ssh/id_test" "$home/.ssh/id_test.pub" | tr '\n' ' ')" "700 600 644 "
+printf 'MINE\n' >"$home/.ssh/id_test"; printf 'NEW\n' >"$repo/setup-ubuntu-workstation/ssh/id_test"
+( TARGET_HOME="$home"; configs_ssh apply "$repo" ) >/dev/null 2>&1
+eq "a different key in ~/.ssh is never overwritten" "$(cat "$home/.ssh/id_test")" "MINE"
+printf 'x\n' >"$home/.ssh/authorized_keys"; printf 'x\n' >"$home/.ssh/known_hosts"; printf 'C\n' >"$home/.ssh/config"
+( TARGET_HOME="$home"; configs_ssh save "$repo" ) >/dev/null 2>&1
+eq "save brings id_* and config back, not authorized_keys or known_hosts" "$(cd "$repo/setup-ubuntu-workstation/ssh" && printf '%s ' *)" "config id_test id_test.pub "
+eq "save takes the machine's key" "$(cat "$repo/setup-ubuntu-workstation/ssh/id_test")" "MINE"
+
 echo "managed block"
 f="$tmp/bashrc"; printf 'mine 1\nmine 2\n' >"$f"
 user_file() { atomic_write "$1"; }

@@ -4,7 +4,8 @@
 # setup-ubuntu-workstation/ in it; hosts/<hostname>/ holds a machine's own
 # copy of a file. The files are kept as they are, tokens included, so the
 # repository must be private. config.conf becomes this machine's config with
-# the next `sudo ./setup.sh install`.
+# the next `sudo ./setup.sh install`, which also puts your files in place.
+# ssh/ holds your SSH keys (and ssh config) for ~/.ssh.
 #   ./setup.sh configs         pull the repository, put your files in place
 #   ./setup.sh configs save    copy your files back, commit, push
 
@@ -38,6 +39,51 @@ configs_system() {
   return 0
 }
 
+# configs_user — during install: your files put in place as you
+# (./setup.sh configs); without a GitHub login it only warns.
+configs_user() {
+  [[ "$(cfg_get CONFIGS_REPO)" == */* ]] || return 0
+  as_user "$REPO_ROOT/setup.sh" configs \
+    || log_warn "Your files from $(cfg_get CONFIGS_REPO) are not in place (signed in to GitHub? ./setup.sh login), then: ./setup.sh configs"
+  return 0
+}
+
+# configs_ssh apply|save DIR — your SSH keys. apply: every file of ssh/ in the
+# repository (a machine's own copy in hosts/<hostname>/ssh/ wins) to ~/.ssh,
+# private ones 0600, *.pub 0644. A file already in ~/.ssh that differs stays
+# as it is, so a key is never overwritten. save: id_* and config back, never
+# authorized_keys or known_hosts (they belong to each machine).
+configs_ssh() {
+  local mode="$1" dir="$2" sub="$2/setup-ubuntu-workstation" host f name src dst perm
+  local -A names=()
+  host="$(hostname -s)"
+  case "$mode" in
+    apply)
+      for f in "$sub/ssh"/* "$sub/hosts/$host/ssh"/*; do [[ -f "$f" ]] && names["${f##*/}"]=1; done
+      (( ${#names[@]} )) || return 0
+      install -d -m 0700 "$TARGET_HOME/.ssh"
+      while read -r name; do
+        src="$(configs_source "$dir" "ssh/$name")" dst="$TARGET_HOME/.ssh/$name"
+        perm=0600; [[ "$name" == *.pub ]] && perm=0644
+        if [[ -f "$dst" ]] && ! cmp -s "$src" "$dst"; then
+          log_warn "~/.ssh/$name differs from the repository's: left as it is (move it away to take the repository's)"
+          continue
+        fi
+        [[ -f "$dst" ]] || install -m "$perm" "$src" "$dst"
+        chmod "$perm" "$dst"
+        log_ok "~/.ssh/$name"
+      done < <(printf '%s\n' "${!names[@]}" | sort) ;;
+    save)
+      for dst in "$TARGET_HOME/.ssh"/id_* "$TARGET_HOME/.ssh/config"; do
+        [[ -f "$dst" ]] || continue
+        name="${dst##*/}"; f="$(configs_source "$dir" "ssh/$name")"
+        perm=0600; [[ "$name" == *.pub ]] && perm=0644
+        mkdir -p "$(dirname "$f")"; cmp -s "$dst" "$f" || install -m "$perm" "$dst" "$f"
+      done ;;
+  esac
+  return 0
+}
+
 configs_run() { # [save]
   local mode="${1:-apply}" repo dir entry src dst perm f host
   repo="$(cfg_get CONFIGS_REPO)"
@@ -55,6 +101,7 @@ configs_run() { # [save]
         cmp -s "$f" "$TARGET_HOME/$dst" || install -m "$perm" "$f" "$TARGET_HOME/$dst"
         log_ok "~/$dst"
       done
+      configs_ssh apply "$dir"
       claude_llm_links
       log_info "config.conf is used by the next: sudo ./setup.sh install" ;;
     save)
@@ -64,6 +111,7 @@ configs_run() { # [save]
         f="$(configs_source "$dir" "$src")"; mkdir -p "$(dirname "$f")"
         cmp -s "$dst" "$f" || install -m "$perm" "$dst" "$f"
       done
+      configs_ssh save "$dir"
       git -C "$dir" add -A
       if git -C "$dir" diff --cached --quiet; then log_ok "Nothing changed"
       else

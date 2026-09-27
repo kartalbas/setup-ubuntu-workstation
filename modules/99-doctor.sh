@@ -14,6 +14,26 @@ _tool() {
   fi
 }
 
+# _ssh_keys — every private key in your config repository's ssh/ is in
+# ~/.ssh, yours alone (0600) and readable as a key.
+_ssh_keys() {
+  local dir f name dst keys=() bad=()
+  dir="$(configs_dir)" || return 0
+  for f in "$dir/setup-ubuntu-workstation/ssh"/id_*; do
+    [[ -f "$f" && "$f" != *.pub ]] || continue
+    name="${f##*/}" dst="$TARGET_HOME/.ssh/${f##*/}"
+    if [[ -f "$dst" && "$(stat -c %a "$dst")" == 600 ]] && ssh-keygen -lf "$dst" >/dev/null 2>&1; then
+      keys+=("$name ($(ssh-keygen -lf "$dst" | awk '{print $NF, $1}' | tr -d '()'))")
+    else bad+=("$name"); fi
+  done
+  (( ${#keys[@]} + ${#bad[@]} )) || return 0
+  if (( ${#bad[@]} )); then
+    log_err "$(printf '%-24s %s' "SSH keys" "not in ~/.ssh or not 0600: ${bad[*]} (./setup.sh configs)")"; _d_bad=$((_d_bad + 1))
+  else
+    log_ok "$(printf '%-24s %s' "SSH keys" "${keys[*]}")"; _d_ok=$((_d_ok + 1))
+  fi
+}
+
 doctor() {
   log_step "Doctor ($TARGET_USER)"
   _tool KITTY "kitty" kitty --version
@@ -93,6 +113,7 @@ doctor() {
   _tool TERRAFORM "terraform" "terraform version | head -1"
   _tool VAULT "vault" "vault version"
   _tool MKCERT "mkcert" mkcert --version
+  _ssh_keys
   echo >&2
   if (( _d_bad )); then log_warn "$_d_ok ok, $_d_bad missing or failing"; exit 1; fi
   log_ok "All $_d_ok enabled tools answer"

@@ -137,11 +137,14 @@ folder `setup-ubuntu-workstation/` holds:
 | `kitty/local.conf`, `ghostty/local.conf` | `~/.config/kitty/`, `~/.config/ghostty/` |
 | `powershell/profile.local.ps1` | `~/.config/powershell/` |
 | `opencode/opencode.json` (URLs and tokens of your LLM servers) | `~/.config/opencode/opencode.json` (0600) |
+| `ssh/` (your SSH keys, `config`) | `~/.ssh/` (private keys 0600, `*.pub` 0644); a different file already there is left alone |
 | `hosts/<hostname>/…` | the same files, for that machine only |
 
-`./setup.sh configs` pulls the repository and puts the files in place;
-`./setup.sh configs save` copies yours back, commits and pushes. The files
-are kept as they are, tokens included — keep the repository private.
+`./setup.sh configs` pulls the repository and puts the files in place, and
+`sudo ./setup.sh install` does the same at its end; `./setup.sh configs save`
+copies yours back (from `~/.ssh` only `id_*` and `config`, never
+`authorized_keys` or `known_hosts`), commits and pushes. The files are kept
+as they are, tokens and private keys included — keep the repository private.
 
 ## Where your settings live
 
@@ -153,6 +156,7 @@ placeholders (`config.example.conf`, `templates/opencode.json`).
 | Which tools are on or off | `/etc/setup-ubuntu-workstation/config.conf` | 644 root |
 | Newer versions chosen with `update` (only once you chose one) | `/etc/setup-ubuntu-workstation/versions.local.conf` | 644 root |
 | OpenCode: your LLM servers with URL, token and name | `~/.config/opencode/opencode.json` | 600 |
+| SSH keys (from your config repository) | `~/.ssh/id_*` | 600 |
 | Your own terminal and shell settings (never overwritten) | `~/.config/kitty/local.conf`, `~/.config/ghostty/local.conf`, `~/.config/powershell/profile.local.ps1`, `~/.bashrc` outside the marked block | 644 |
 | Changes made in Terminal's (Ptyxis) preferences | `~/.config/dconf/user` | 664 |
 | git name and e-mail | `~/.gitconfig` | 664 |
