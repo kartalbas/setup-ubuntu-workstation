@@ -20,7 +20,7 @@ azure_cli_install() {
   if [[ "$(user_out az version --query '"azure-cli"' -o tsv 2>/dev/null)" == "$want" ]]; then
     log_ok "Azure CLI $want already installed"; return 0
   fi
-  as_user uv tool install --force --python "$(ver AZURE_CLI_PYTHON)" "azure-cli==$want" >/dev/null
+  as_user uv tool install --quiet --force --python "$(ver AZURE_CLI_PYTHON)" "azure-cli==$want" >/dev/null
   log_ok "Azure CLI $want installed (uv tool)"
 }
 
