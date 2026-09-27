@@ -132,6 +132,20 @@ eq "DOCK becomes the dock's list" "$(cat "$tmp/dconf.log")" "write /org/gnome/sh
 CFG[DEFAULT_TERMINAL]=ghostty CFG[KITTY]=1 CFG[GHOSTTY]=1; eq "DEFAULT_TERMINAL picks the terminal" "$(default_terminal_id)" "ghostty"
 CFG[GHOSTTY]=0; eq "an off DEFAULT_TERMINAL falls back to the first one on" "$(default_terminal_id)" "kitty"
 
+echo "pwsh prompt"
+if P="$(command -v pwsh || command -v "$HOME/.local/bin/pwsh")"; then
+  r="$tmp/prompt-repo"; git init -q -b main "$r"
+  git -C "$r" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
+  render pwsh-profile.ps1 >"$tmp/profile.ps1"
+  prompt_in() { (cd "$1" && "$P" -NoLogo -NoProfile -Command ". '$tmp/profile.ps1'; Prompt | Out-Null" 2>&1) | sed 's/\x1b\[[0-9;]*m//g'; }
+  [[ "$(prompt_in "$r")" != *untracked* ]] && ok "a clean repo shows no untracked files (git's header lines do not count)" \
+    || bad "clean repo prompt: $(prompt_in "$r")"
+  touch "$r/new-file"
+  [[ "$(prompt_in "$r")" == *"untracked:1"* ]] && ok "one new file shows as untracked:1" || bad "prompt with one new file: $(prompt_in "$r")"
+else
+  echo "  - skipped: no pwsh here"
+fi
+
 echo
 echo "$pass passed, $fail failed"
 (( fail == 0 ))
