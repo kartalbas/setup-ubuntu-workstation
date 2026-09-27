@@ -90,7 +90,7 @@ doctor() {
   _tool FZF "fzf" fzf --version
   _tool BAT "bat" "bat --version"
   _tool SEVENZIP "7-Zip" "7z | head -2 | tail -1"
-  _tool MC "Midnight Commander" "mc --version | head -1"
+  _tool MC "Midnight Commander" "TERM=xterm mc --version | head -1"
   _tool NODE "Node.js (nvm)" '. ~/.nvm/nvm.sh && echo "$(node --version), default $(nvm version default)"'
   _tool YARN_PNPM "yarn / pnpm" '. ~/.nvm/nvm.sh && echo "yarn $(yarn --version) · pnpm $(pnpm --version)"'
   # uv's python3 in ~/.local/bin would hide the system Python from the desktop
