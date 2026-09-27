@@ -398,7 +398,8 @@ apt_repo() {
 deb_install() {
   local key="$1" pkg="$2" file want
   want="$(ver "${key}_VERSION")"
-  if [[ "$(installed_version "$pkg")" == "$want"* ]]; then log_ok "$pkg $want already installed"; return 0; fi
+  # dpkg may write the version with - where the pin has . (bcompare 5.2.6-32774)
+  if [[ "$(installed_version "$pkg" | tr '-' '.')" == "${want//-/.}"* ]]; then log_ok "$pkg $want already installed"; return 0; fi
   file="$(fetch "$key")"
   apt_update
   DEBIAN_FRONTEND=noninteractive run apt-get install -y -q "$file"
