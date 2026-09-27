@@ -126,12 +126,6 @@ ptyxis_setup() {
     user_dconf write /org/gnome/Ptyxis/profile-uuids "$new"
     user_dconf write /org/gnome/Ptyxis/default-profile-uuid "'$PTYXIS_PROFILE'"
   fi
-  # Ptyxis writes its factory cell scales (1.0) into the profile, which hides
-  # the Windows Terminal cell above; a scale still at 1.0 is no choice.
-  local key profile="/org/gnome/Ptyxis/Profiles/$PTYXIS_PROFILE"
-  for key in cell-width-scale cell-height-scale; do
-    if [[ "$(user_out dconf read "$profile/$key" 2>/dev/null)" == 1.0 ]]; then user_dconf reset "$profile/$key"; fi
-  done
   log_ok "Ptyxis (GNOME's terminal) set up, with bash"
 }
 

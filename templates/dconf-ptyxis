@@ -22,11 +22,6 @@ word-char-exceptions=@ms '_'
 label='Bash'
 palette='campbell'
 scrollback-lines=9001
-# Windows Terminal's cell for Cascadia Mono 12: 10 x 20 px; VTE makes it 9 x 19,
-# which squeezes the text. VTE scales the whole pixels and cuts the fraction:
-# 9 x 1.12 = 10.08 and 19 x 1.06 = 20.14 give 10 x 20 (measured).
-cell-width-scale=1.12
-cell-height-scale=1.06
 
 [org/gnome/Ptyxis/Shortcuts]
 paste-clipboard='<ctrl>v'
