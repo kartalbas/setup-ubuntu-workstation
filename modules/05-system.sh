@@ -1,12 +1,13 @@
 # shellcheck shell=bash
 # modules/05-system.sh — the part that needs root, `sudo ./setup.sh system`:
 # Ubuntu packages, what only comes as a system package (Chrome, Edge, VS Code,
-# Chromium, Ghostty, Beyond Compare), Docker with the user in its group, and
-# the AppArmor profile that lets Antigravity (in the home) use Chromium's
-# sandbox. It reads the user's config and writes nothing into the home.
+# Chromium, Ghostty, Beyond Compare), Docker with the user in its group, the
+# AppArmor profile that lets Antigravity (in the home) use Chromium's sandbox,
+# and a swap file. It reads the user's config and writes nothing into the home.
 # `./setup.sh install` checks that this part is there (system_check).
 
 ANTIGRAVITY_APPARMOR="/etc/apparmor.d/setup-ubuntu-workstation-antigravity"
+SWAP_FILE="/swap.img"   # the name Ubuntu's installer gives its swap file
 DOCKER_CONFLICTS=(docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc)
 
 # system_packages — the apt packages the config asks for.
@@ -97,6 +98,41 @@ antigravity_apparmor() {
   return 0
 }
 
+# swap_gb — SWAP_GB from the config, checked: a whole number of GB (0 = none).
+swap_gb() {
+  local gb; gb="$(cfg_get SWAP_GB 16)"
+  [[ "$gb" =~ ^[0-9]+$ ]] || die "SWAP_GB is a number of GB (0 = no swap file), not: $gb"
+  printf '%s' "$((10#$gb))"
+}
+
+# swap_setup — a swap file of SWAP_GB when the machine has no swap at all. /tmp
+# is in RAM on Ubuntu (tmpfs); without swap a full memory makes the kernel end
+# programs (the OOM killer) instead of moving idle pages, /tmp among them, out
+# to the disk. A swap that is there, whatever it is, stays as it is.
+swap_setup() {
+  local gb free
+  gb="$(swap_gb)"; (( gb > 0 )) || return 0
+  log_step "Swap"
+  if [[ -n "$(swapon --show=NAME --noheadings 2>/dev/null)" ]]; then
+    log_ok "Swap there already: $(swapon --show=NAME,SIZE --noheadings | xargs)"; return 0
+  fi
+  if [[ "$(blkid -o value -s TYPE "$SWAP_FILE" 2>/dev/null)" != swap ]]; then
+    free="$(df --output=avail -BG / | tail -1 | tr -dc 0-9)"
+    if (( free < gb + 10 )); then
+      log_warn "Swap: $gb GB do not fit on / ($free GB free) — no swap file (SWAP_GB)"; return 0
+    fi
+    run rm -f "$SWAP_FILE"
+    if [[ "$(findmnt -no FSTYPE /)" == btrfs ]]; then run btrfs filesystem mkswapfile --size "${gb}g" "$SWAP_FILE" >/dev/null
+    else run fallocate -l "${gb}G" "$SWAP_FILE"; run chmod 0600 "$SWAP_FILE"; run mkswap "$SWAP_FILE" >/dev/null; fi
+  fi
+  if ! awk -v f="$SWAP_FILE" '$1 == f {found = 1} END {exit !found}' /etc/fstab; then
+    { cat /etc/fstab; [[ -z "$(tail -c1 /etc/fstab)" ]] || echo; printf '%s\tnone\tswap\tsw\t0\t0\n' "$SWAP_FILE"; } \
+      | atomic_write /etc/fstab 0644
+  fi
+  run swapon "$SWAP_FILE"
+  log_ok "Swap: $SWAP_FILE, $gb GB (in /etc/fstab: on from every start)"
+}
+
 # system_check — during `./setup.sh install`: what the system part provides is
 # there. What is missing is named, with the command that brings it; install
 # goes on without it.
@@ -109,6 +145,7 @@ system_check() {
   if { on ANTIGRAVITY || on ANTIGRAVITY_HUB; } && [[ ! -f "$ANTIGRAVITY_APPARMOR" ]]; then missing+=("Antigravity's AppArmor profile"); fi
   if on DOCKER_ENGINE && [[ " $(id -nG "$TARGET_USER") " != *" docker "* ]] \
      && ! getent group docker | grep -qE "[:,]$TARGET_USER(,|$)"; then missing+=("docker group"); fi
+  if (( $(swap_gb) > 0 )) && [[ -z "$(swapon --show=NAME --noheadings 2>/dev/null)" ]]; then missing+=("swap (SWAP_GB)"); fi
   if (( ${#missing[@]} )); then
     log_warn "Not there yet from the system part: ${missing[*]}"
     log_warn "Run it once with sudo, then install again: sudo ./setup.sh system"

@@ -125,6 +125,12 @@ f="$tmp/bashrc"; printf 'mine 1\nmine 2\n' >"$f"
 printf 'A\n' | managed_block "$f" test; printf 'B\n' | managed_block "$f" test
 eq "block replaced, rest kept" "$(tr '\n' '|' <"$f")" "mine 1|mine 2|# >>> test >>>|B|# <<< test <<<|"
 
+echo "swap"
+CFG[SWAP_GB]="16"; eq "SWAP_GB: a number of GB" "$(swap_gb)" "16"
+CFG[SWAP_GB]="08"; eq "SWAP_GB: leading zero is still decimal" "$(swap_gb)" "8"
+CFG[SWAP_GB]="16G"; ( swap_gb ) >/dev/null 2>&1 && bad "SWAP_GB=16G accepted" || ok "SWAP_GB with a unit is refused"
+CFG[SWAP_GB]="16"
+
 echo "home, not the system"
 eq "system part: no tool that lives in the home now" \
   "$(system_packages | grep -cxE 'jq|gh|ripgrep|bat|fd|git-delta|zoxide|claude-code|kubectl|helm|terraform|vault|azure-cli|google-cloud-cli|powershell(-lts)?|openjdk-.*|dotnet-sdk-.*|fonts-cascadia-code|bubblewrap|socat')" "0"

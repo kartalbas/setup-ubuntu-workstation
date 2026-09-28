@@ -30,7 +30,7 @@ ${C_BOLD}USAGE${C_RST}
 ${C_BOLD}COMMANDS${C_RST}
   system               As root: Ubuntu packages, Chrome, Edge, VS Code, Chromium,
                        Ghostty, Beyond Compare, Docker (and you in its group),
-                       Antigravity's sandbox profile
+                       Antigravity's sandbox profile, a swap file
   install              Everything else, into your home (~/.local): terminals,
                        shells, tools, languages, CLIs, fonts, settings
                        (idempotent: re-run it any time, e.g. after a git pull)
@@ -90,6 +90,7 @@ system_all() {
   log_step "setup-ubuntu-workstation: the system part, for $TARGET_USER"
   repos_setup         # 10-repos:  vendor apt repositories (one apt update)
   system_setup        # 05-system: packages, browsers, Docker, AppArmor
+  swap_setup          # 05-system: a swap file when the machine has no swap
   log_step "Done"
   log_ok "System part ready. Now, as yourself: ./setup.sh install"
 }
