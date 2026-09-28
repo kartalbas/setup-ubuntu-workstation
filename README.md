@@ -179,7 +179,7 @@ OWNER/NAME`. It is cloned to `~/repos/<owner>/<name>`, and its folder
 | `opencode/opencode.json` (URLs and tokens of your LLM servers) | `~/.config/opencode/opencode.json` (0600) |
 | `nemo/settings.ini` (Nemo's settings, without a window's size and place) | GNOME settings `/org/nemo/` |
 | `nemo/actions-tree.json` (Nemo's action menu and its shortcuts) · `nemo/bookmarks` (side pane; also the Files app's and the file dialogs') | `~/.config/nemo/`, `~/.config/gtk-3.0/bookmarks` |
-| `ssh/` (your SSH keys, `config`) | `~/.ssh/` (private keys 0600, `*.pub` 0644); a different file already there is left alone |
+| `ssh/` (your SSH keys, `config`; `authorized_keys`: the keys that may log in to your machines) | `~/.ssh/` (private keys 0600, `*.pub` 0644); a different file already there is left alone; of `authorized_keys` the keys missing in yours are added |
 | `hosts/<hostname>/…` | the same files, for that machine only |
 
 `./setup.sh configs` pulls the repository and puts the files in place, and

@@ -111,6 +111,14 @@ printf 'x\n' >"$home/.ssh/authorized_keys"; printf 'x\n' >"$home/.ssh/known_host
 ( TARGET_HOME="$home"; configs_ssh save "$repo" ) >/dev/null 2>&1
 eq "save brings id_* and config back, not authorized_keys or known_hosts" "$(cd "$repo/setup-ubuntu-workstation/ssh" && printf '%s ' *)" "config id_test id_test.pub "
 eq "save takes the machine's key" "$(cat "$repo/setup-ubuntu-workstation/ssh/id_test")" "MINE"
+K1="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMINE" K2="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDpc"
+printf '%s master@host' "$K1" >"$home/.ssh/authorized_keys"   # its last line without a newline
+printf '# who may log in\n%s karta@PC\n%s other-comment\n' "$K2" "$K1" >"$repo/setup-ubuntu-workstation/ssh/authorized_keys"
+( TARGET_HOME="$home"; configs_ssh apply "$repo" ) >/dev/null 2>&1
+eq "authorized_keys: the missing key added, yours kept, none twice" "$(cat "$home/.ssh/authorized_keys")" "$K1 master@host
+$K2 karta@PC"
+( TARGET_HOME="$home"; configs_ssh apply "$repo" ) >/dev/null 2>&1
+eq "authorized_keys: 0600, a second run adds nothing" "$(stat -c %a "$home/.ssh/authorized_keys") $(wc -l <"$home/.ssh/authorized_keys")" "600 2"
 
 echo "managed block"
 f="$tmp/bashrc"; printf 'mine 1\nmine 2\n' >"$f"

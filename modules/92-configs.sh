@@ -49,7 +49,9 @@ configs_early() {
 # configs_ssh apply|save DIR — your SSH keys. apply: every file of ssh/ in the
 # repository (a machine's own copy in hosts/<hostname>/ssh/ wins) to ~/.ssh,
 # private ones 0600, *.pub 0644. A file already in ~/.ssh that differs stays
-# as it is, so a key is never overwritten. save: id_* and config back, never
+# as it is, so a key is never overwritten. ssh/authorized_keys holds the keys
+# that may log in to your machines: those ~/.ssh/authorized_keys lacks are
+# added, the ones there stay. save: id_* and config back, never
 # authorized_keys or known_hosts (they belong to each machine).
 configs_ssh() {
   local mode="$1" dir="$2" sub="$2/setup-ubuntu-workstation" host f name src dst perm
@@ -62,6 +64,7 @@ configs_ssh() {
       install -d -m 0700 "$TARGET_HOME/.ssh"
       while read -r name; do
         src="$(configs_source "$dir" "ssh/$name")" dst="$TARGET_HOME/.ssh/$name"
+        if [[ "$name" == authorized_keys ]]; then configs_authorized_keys "$src" "$dst"; continue; fi
         perm=0600; [[ "$name" == *.pub ]] && perm=0644
         if [[ -f "$dst" ]] && ! cmp -s "$src" "$dst"; then
           log_warn "~/.ssh/$name differs from the repository's: left as it is (move it away to take the repository's)"
@@ -94,6 +97,22 @@ configs_dconf_dump() {
       if (head != "") { if (n++) print ""; print head; head = "" }
       print }'
   rm -f "$profile"
+}
+
+# configs_authorized_keys SRC DST — the keys of SRC that DST lacks, added at
+# its end (a key counts as there with any comment or options); DST 0600.
+configs_authorized_keys() {
+  local line blob added=0
+  [[ -f "$2" ]] || install -m 0600 /dev/null "$2"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ (^|[[:space:]])(ssh-[a-z0-9-]+|ecdsa-[a-z0-9-]+|sk-[a-z0-9@.-]+)[[:space:]]+(AAAA[A-Za-z0-9+/]+=*) ]] || continue
+    blob="${BASH_REMATCH[3]}"
+    grep -qF -- "$blob" "$2" && continue
+    [[ ! -s "$2" || -z "$(tail -c1 "$2")" ]] || printf '\n' >>"$2"   # a last line without its newline
+    printf '%s\n' "$line" >>"$2"; added=$((added + 1))
+  done <"$1"
+  chmod 0600 "$2"
+  if (( added )); then log_ok "~/.ssh/authorized_keys: $added key(s) added"; else log_ok "~/.ssh/authorized_keys"; fi
 }
 
 configs_run() { # [apply|save] [soft]
