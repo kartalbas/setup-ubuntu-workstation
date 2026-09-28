@@ -30,7 +30,7 @@ ${C_BOLD}USAGE${C_RST}
 ${C_BOLD}COMMANDS${C_RST}
   system               As root: Ubuntu packages, Chrome, Edge, VS Code, Chromium,
                        Ghostty, Beyond Compare, Docker (and you in its group),
-                       Antigravity's sandbox profile, a swap file
+                       Antigravity's sandbox profile, a swap file, /tmp on the disk
   install              Everything else, into your home (~/.local): terminals,
                        shells, tools, languages, CLIs, fonts, settings
                        (idempotent: re-run it any time, e.g. after a git pull)
@@ -91,6 +91,7 @@ system_all() {
   repos_setup         # 10-repos:  vendor apt repositories (one apt update)
   system_setup        # 05-system: packages, browsers, Docker, AppArmor
   swap_setup          # 05-system: a swap file when the machine has no swap
+  tmp_on_disk         # 05-system: /tmp on the disk (Ubuntu 24.10+ has it in RAM)
   log_step "Done"
   log_ok "System part ready. Now, as yourself: ./setup.sh install"
 }

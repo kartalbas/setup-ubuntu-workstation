@@ -8,7 +8,7 @@ verified key).
 
 Almost everything goes into your home and belongs to you: your account
 installs and updates it without sudo. Only what Ubuntu allows root alone
-(packages, Docker, an AppArmor profile, a swap file) is a separate step:
+(packages, Docker, an AppArmor profile, a swap file, /tmp on the disk) is a separate step:
 
 ```bash
 git clone <this-repo> setup-ubuntu-workstation && cd setup-ubuntu-workstation
@@ -20,7 +20,7 @@ sudo ./setup.sh system         # the system part (packages, browsers, Docker)
 | Where | What |
 |---|---|
 | your home (`./setup.sh install`) | programs in `~/.local/bin` and `~/.local/opt` (kitty, PowerShell, Antigravity, Neovim, Go, Java, .NET, gcloud, the command-line tools, Kubernetes and cloud CLIs, Claude Code, Codex, OpenCode), fonts, menu entries, the Files app and Nemo additions, GNOME extensions, settings; nvm/Node, uv/Python, Flutter, Rust |
-| the system (`sudo ./setup.sh system`) | Ubuntu packages (git, build-essential, htop, Ptyxis, Nemo, database clients, …), Chrome, Edge and VS Code (their apt repositories: `sudo apt upgrade` updates them), Chromium (snap, updates itself), Ghostty and Beyond Compare (.deb), Docker Engine with you in the `docker` group (docker then works without sudo), an AppArmor profile that lets Antigravity use Chromium's sandbox, as Ubuntu's own profiles do for VS Code and Chrome, and a swap file (`SWAP_GB`, 16 GB) when the machine has no swap: /tmp is in RAM, and without swap a full memory makes the kernel end programs |
+| the system (`sudo ./setup.sh system`) | Ubuntu packages (git, build-essential, htop, Ptyxis, Nemo, database clients, …), Chrome, Edge and VS Code (their apt repositories: `sudo apt upgrade` updates them), Chromium (snap, updates itself), Ghostty and Beyond Compare (.deb), Docker Engine with you in the `docker` group (docker then works without sudo), an AppArmor profile that lets Antigravity use Chromium's sandbox, as Ubuntu's own profiles do for VS Code and Chrome, a swap file (`SWAP_GB`, 16 GB) when the machine has no swap, and /tmp on the disk (`TMP_ON_DISK`; since 24.10 Ubuntu mounts it in RAM, up to half of it, so a big file there takes memory from the programs), emptied at every start as before |
 
 `install` checks the system part first and names what is missing.
 
@@ -298,6 +298,7 @@ Nothing is removed when switched off.
 | 65 | sign-ins: gh (+ git credentials), Claude Code, Codex, agy, Muse | | ✓ |
 | – | `DOCK`: the dock of the first install (desktop entry ids); after that it is yours | your config | |
 | 81 | swap file `/swap.img` of `SWAP_GB` GB (16) when there is no swap; 0 = none | *system* | ✓ |
+| 82 | /tmp on the disk (`systemctl mask tmp.mount`), emptied at every start; from the next start | *system* | ✓ |
 
 ## Maintenance
 

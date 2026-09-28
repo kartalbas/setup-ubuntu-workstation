@@ -3,11 +3,14 @@
 # Ubuntu packages, what only comes as a system package (Chrome, Edge, VS Code,
 # Chromium, Ghostty, Beyond Compare), Docker with the user in its group, the
 # AppArmor profile that lets Antigravity (in the home) use Chromium's sandbox,
-# and a swap file. It reads the user's config and writes nothing into the home.
+# a swap file and /tmp on the disk. It reads the user's config and writes
+# nothing into the home.
 # `./setup.sh install` checks that this part is there (system_check).
 
 ANTIGRAVITY_APPARMOR="/etc/apparmor.d/setup-ubuntu-workstation-antigravity"
 SWAP_FILE="/swap.img"   # the name Ubuntu's installer gives its swap file
+TMP_MOUNT_UNIT="/etc/systemd/system/tmp.mount"   # a link to /dev/null: masked
+TMP_TMPFILES="/etc/tmpfiles.d/tmp.conf"          # takes the place of systemd's own
 DOCKER_CONFLICTS=(docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc)
 
 # system_packages — the apt packages the config asks for.
@@ -133,6 +136,27 @@ swap_setup() {
   log_ok "Swap: $SWAP_FILE, $gb GB (in /etc/fstab: on from every start)"
 }
 
+# tmp_on_disk — /tmp on the disk, as before Ubuntu 24.10: since then systemd's
+# tmp.mount puts a tmpfs there, in RAM (up to half of it), and every file in
+# /tmp takes memory from the programs. tmp.mount is masked, which takes effect
+# at the next start; /tmp is then emptied at every start, as the tmpfs was and
+# as Ubuntu did before, and files unused for 10 days go in between (systemd's
+# rule). TMP_ON_DISK=0 gives Ubuntu's tmpfs back.
+tmp_on_disk() {
+  log_step "/tmp"
+  if on TMP_ON_DISK; then
+    [[ "$(readlink "$TMP_MOUNT_UNIT" 2>/dev/null)" == /dev/null ]] || run systemctl mask tmp.mount
+    printf '# %s (TMP_ON_DISK): /tmp is on the disk; it is emptied at\n# every start, and files unused for 10 days go in between.\nD /tmp 1777 root root 10d\n' \
+      "$MANAGED_MARK" | atomic_write "$TMP_TMPFILES" 0644
+    if findmnt -n -t tmpfs /tmp >/dev/null 2>&1; then log_ok "/tmp on the disk from the next start (until then still in RAM)"
+    else log_ok "/tmp on the disk"; fi
+  else
+    if [[ "$(readlink "$TMP_MOUNT_UNIT" 2>/dev/null)" == /dev/null ]]; then run systemctl unmask tmp.mount; fi
+    if grep -qF "$MANAGED_MARK" "$TMP_TMPFILES" 2>/dev/null; then run rm -f "$TMP_TMPFILES"; fi
+    log_ok "/tmp as Ubuntu has it (a tmpfs, in RAM, from the next start)"
+  fi
+}
+
 # system_check — during `./setup.sh install`: what the system part provides is
 # there. What is missing is named, with the command that brings it; install
 # goes on without it.
@@ -146,11 +170,15 @@ system_check() {
   if on DOCKER_ENGINE && [[ " $(id -nG "$TARGET_USER") " != *" docker "* ]] \
      && ! getent group docker | grep -qE "[:,]$TARGET_USER(,|$)"; then missing+=("docker group"); fi
   if (( $(swap_gb) > 0 )) && [[ -z "$(swapon --show=NAME --noheadings 2>/dev/null)" ]]; then missing+=("swap (SWAP_GB)"); fi
+  if on TMP_ON_DISK && [[ "$(readlink "$TMP_MOUNT_UNIT" 2>/dev/null)" != /dev/null ]]; then missing+=("/tmp on the disk (TMP_ON_DISK)"); fi
   if (( ${#missing[@]} )); then
     log_warn "Not there yet from the system part: ${missing[*]}"
     log_warn "Run it once with sudo, then install again: sudo ./setup.sh system"
   else
     log_ok "System part in place"
+  fi
+  if on TMP_ON_DISK && findmnt -n -t tmpfs /tmp >/dev/null 2>&1 && [[ "$(readlink "$TMP_MOUNT_UNIT" 2>/dev/null)" == /dev/null ]]; then
+    log_info "/tmp is still in RAM: it moves to the disk at the next start"
   fi
   return 0
 }
