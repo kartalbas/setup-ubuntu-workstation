@@ -74,6 +74,8 @@ grep -qiE 'https?://[a-z0-9-]+\.[a-z]|[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' <(grep -v 
   && bad "OpenCode template has a real host" || ok "OpenCode template has placeholders only"
 ghostty_config
 eq "config.ghostty gets the shell (by its path)" "$(grep -cxF "command = $PW" "$TARGET_HOME/.config/ghostty/config.ghostty")" "1"
+eq "Shift+Insert and Ctrl+Shift+Insert paste in kitty and Ghostty (the clipboard history presses them)" \
+  "$(grep -cE '^map (ctrl\+)?shift\+insert +paste_from_clipboard$' "$K/kitty.conf") $(grep -cE '^keybind = (ctrl\+)?shift\+insert=paste_from_clipboard$' "$TARGET_HOME/.config/ghostty/config.ghostty")" "2 2"
 eq "config.ghostty loads local.conf" "$(grep -c '^config-file = ?local.conf$' "$TARGET_HOME/.config/ghostty/config.ghostty")" "1"
 PTYXIS_PROFILE_UUID=0123abcd
 eq "Ptyxis defaults name the Bash profile" "$(render dconf-ptyxis | grep -c "^default-profile-uuid='0123abcd'$\|^label='Bash'$")" "2"
@@ -208,6 +210,7 @@ ver CLIPBOARD_INDICATOR_VERSION >"$ext/.setup-ubuntu-workstation-version"   # in
 : >"$tmp/dconf.log"; PATH="$tmp/fakebin:$PATH" FAKE_ON="['a@b']" FAKE_OFF="" clipboard_history_install 2>/dev/null
 eq "the extension joins the enabled ones" "$(grep '^write /org/gnome/shell/enabled-extensions' "$tmp/dconf.log")" "write /org/gnome/shell/enabled-extensions ['a@b', '$CLIPBOARD_UUID']"
 eq "Win+V opens the history, notifications keep Win+M" "$(grep -cxE "write /org/gnome/shell/(extensions/clipboard-indicator/toggle-menu \['<Super>v'\]|keybindings/toggle-message-tray \['<Super>m'\])" "$tmp/dconf.log")" "2"
+eq "a chosen entry is pasted, as on Windows" "$(grep -c "clipboard-indicator/paste-on-select true$" "$tmp/dconf.log")" "1"
 eq "its Ctrl+F8…F12 shortcuts are off" "$(grep -cE "clipboard-indicator/(clear-history|prev-entry|next-entry|private-mode-binding) @as \[\]$" "$tmp/dconf.log")" "4"
 : >"$tmp/dconf.log"; PATH="$tmp/fakebin:$PATH" FAKE_ON="['a@b']" FAKE_OFF="['$CLIPBOARD_UUID']" clipboard_history_install 2>/dev/null
 eq "switched off in the Extensions app: stays off, nothing set" "$(wc -l <"$tmp/dconf.log")" "0"

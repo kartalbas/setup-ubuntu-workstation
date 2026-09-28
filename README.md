@@ -78,7 +78,7 @@ Ctrl+Alt+T, "Open in Terminal" in Nemo and the F12 drop-down open.
 
 | Keys / mouse | Action |
 |---|---|
-| Ctrl+C / Ctrl+V | copy when text is selected (else interrupt) / paste; also Ctrl+Shift+C/V, Ctrl+Insert, Shift+Insert |
+| Ctrl+C / Ctrl+V | copy when text is selected (else interrupt) / paste; also Ctrl+Shift+C/V, Ctrl+Insert, Shift+Insert, Ctrl+Shift+Insert |
 | right click · Ctrl+click | copy the selection, else paste · open a link |
 | tab: double-click · drag · middle click | rename · move (also out into a new window) · close |
 | Ctrl+Shift+T, Ctrl+Shift+D, Ctrl+Shift+N | new tab, duplicate tab, new window |
@@ -155,7 +155,9 @@ the key yourself:
 
 **Clipboard history** (`CLIPBOARD_HISTORY`): the GNOME extension Clipboard
 Indicator, pinned, from extensions.gnome.org. Win+V opens the list of what you
-copied; choose an entry and paste it with Ctrl+V. Its own shortcuts
+copied; the entry you choose is pasted where you type, as on Windows (the
+extension presses Shift+Insert, in a terminal Ctrl+Shift+Insert: both paste
+in kitty, Ghostty and Ptyxis). Its own shortcuts
 (Ctrl+F8…F12) are switched off: they would take those keys from every
 application. GNOME loads it at the next login; switched off in the Extensions
 app, it stays off.

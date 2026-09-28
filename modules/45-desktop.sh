@@ -40,14 +40,17 @@ windows_keys_file() {
 }
 
 # clipboard_history_install — the GNOME extension Clipboard Indicator, pinned:
-# Win+V opens the history (GNOME's notification list keeps Win+M). Its own
-# shortcuts on Ctrl+F8…F12 are off: they would take those keys from every
-# application. It loads at the next login.
+# Win+V opens the history (GNOME's notification list keeps Win+M), and the
+# entry chosen is pasted where you type, as on Windows: the extension presses
+# Shift+Insert, in a terminal Ctrl+Shift+Insert, and both paste the clipboard
+# in kitty, Ghostty and Ptyxis. Its own shortcuts on Ctrl+F8…F12 are off:
+# they would take those keys from every application. It loads at the next login.
 clipboard_history_install() {
   gnome_extension_install CLIPBOARD_INDICATOR "$CLIPBOARD_UUID" || return 0
   dconf_user_defaults <<'KEYS'
 [org/gnome/shell/extensions/clipboard-indicator]
 toggle-menu=['<Super>v']
+paste-on-select=true
 clear-history=@as []
 prev-entry=@as []
 next-entry=@as []
