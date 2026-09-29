@@ -215,8 +215,10 @@ eq "its Ctrl+F8…F12 shortcuts are off" "$(grep -cE "clipboard-indicator/(clear
 : >"$tmp/dconf.log"; PATH="$tmp/fakebin:$PATH" FAKE_ON="['a@b']" FAKE_OFF="['$CLIPBOARD_UUID']" clipboard_history_install 2>/dev/null
 eq "switched off in the Extensions app: stays off, nothing set" "$(wc -l <"$tmp/dconf.log")" "0"
 printf '#!/bin/sh\necho "$FAKE_TPL"\n' >"$tmp/fakebin/xdg-user-dir"; chmod +x "$tmp/fakebin/xdg-user-dir"
+printf '#!/bin/sh\necho called >>"%s/xdg-update.log"\n' "$tmp" >"$tmp/fakebin/xdg-user-dirs-update"; chmod +x "$tmp/fakebin/xdg-user-dirs-update"
 mkdir -p "$tmp/tpl"; printf 'mine\n' >"$tmp/tpl/Markdown.md"
 PATH="$tmp/fakebin:$PATH" FAKE_TPL="$tmp/tpl" new_documents 2>/dev/null
+eq "a new account (no user-dirs.dirs yet): its folders are made first, as at the first login" "$(wc -l <"$tmp/xdg-update.log")" "1"
 eq "New Document: the missing template is added, yours stays" "$(cd "$tmp/tpl" && printf '%s|' * && wc -c <'Text file.txt' && cat Markdown.md)" "Markdown.md|Text file.txt|0
 mine"
 PATH="$tmp/fakebin:$PATH" FAKE_TPL="$TARGET_HOME" new_documents 2>/dev/null

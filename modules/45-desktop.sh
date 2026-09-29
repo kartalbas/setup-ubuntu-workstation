@@ -66,6 +66,9 @@ KEYS
 # (templates in your templates folder, ~/Templates); files of yours stay.
 new_documents() {
   local dir f new=""
+  # A new account gets its folders, Templates among them, at its first desktop
+  # login (xdg-user-dirs-update); install may come before it.
+  if [[ ! -f "$TARGET_HOME/.config/user-dirs.dirs" ]] && have xdg-user-dirs-update; then run xdg-user-dirs-update; fi
   dir="$(xdg-user-dir TEMPLATES 2>/dev/null)" || dir="$TARGET_HOME/Templates"
   if [[ "${dir%/}" == "$TARGET_HOME" ]]; then
     log_info "New Document: you have no templates folder (XDG_TEMPLATES_DIR is your home) — nothing added"; return 0
