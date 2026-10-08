@@ -22,9 +22,9 @@ shell_setup() {
   return 0
 }
 
-# profile_block — node from nvm for a login shell that is not interactive (ssh HOST
-# COMMAND, the desktop session, a program that runs `bash -l`): Ubuntu's ~/.bashrc
-# returns before its managed block there. NVM_DIR comes first, because nvm.sh run by
+# profile_block — node from nvm for a login shell that is not interactive (the desktop
+# session, a program that runs `bash -l`): Ubuntu's ~/.bashrc returns before its
+# managed block there. `ssh HOST COMMAND` reads neither file and stays without node. NVM_DIR comes first, because nvm.sh run by
 # dash cannot find its own folder and then puts no node on the PATH.
 profile_block() {
   {
