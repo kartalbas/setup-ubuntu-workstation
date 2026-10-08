@@ -206,13 +206,13 @@ placeholders (`config.example.conf`, `templates/opencode.json`).
 | Newer versions chosen with `update` (only once you chose one) | `~/.config/setup-ubuntu-workstation/versions.local.conf` | 644 |
 | OpenCode: your LLM servers with URL, token and name | `~/.config/opencode/opencode.json` | 600 |
 | SSH keys (from your config repository) | `~/.ssh/id_*` | 600 |
-| Your own terminal and shell settings (never overwritten) | `~/.config/kitty/local.conf`, `~/.config/ghostty/local.conf`, `~/.config/powershell/profile.local.ps1`, `~/.bashrc` outside the marked block | 644 |
+| Your own terminal and shell settings (never overwritten) | `~/.config/kitty/local.conf`, `~/.config/ghostty/local.conf`, `~/.config/powershell/profile.local.ps1`, `~/.bashrc` and `~/.profile` outside the marked block | 644 |
 | GNOME settings (Ptyxis, Nemo, keys, clipboard history, font hinting, dock): what this setup set and what you changed | `~/.config/dconf/user` | 664 |
 | git name and e-mail | `~/.gitconfig` | 664 |
 | Sign-ins | gh `~/.config/gh/hosts.yml` (token in the keyring), Claude Code `~/.claude/.credentials.json`, Codex `~/.codex/auth.json`, Muse `~/.config/muse/auth.json`, agy in the GNOME keyring (`~/.local/share/keyrings/`) | 600 |
 
 The files `setup-ubuntu-workstation` manages (`kitty.conf`, `config.ghostty`,
-`profile.ps1`, the marked block in `~/.bashrc`, …) are rewritten by `install`;
+`profile.ps1`, the marked blocks in `~/.bashrc` and `~/.profile`, …) are rewritten by `install`;
 put your own settings into the files above instead.
 
 ## What gets installed

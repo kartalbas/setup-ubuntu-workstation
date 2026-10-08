@@ -18,7 +18,22 @@ shell_setup() {
          | atomic_write "$TARGET_HOME/.config/powershell/profile.local.ps1"
   fi
   bash_block
+  profile_block
   return 0
+}
+
+# profile_block — node from nvm for a login shell that is not interactive (ssh HOST
+# COMMAND, the desktop session, a program that runs `bash -l`): Ubuntu's ~/.bashrc
+# returns before its managed block there. NVM_DIR comes first, because nvm.sh run by
+# dash cannot find its own folder and then puts no node on the PATH.
+profile_block() {
+  {
+    echo "# Managed by setup-ubuntu-workstation — edit outside this block."
+    if on NODE; then
+      echo 'export NVM_DIR="$HOME/.nvm"'
+      echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"'
+    fi
+  } | managed_block "$TARGET_HOME/.profile" setup-ubuntu-workstation
 }
 
 # bash_block — the tools' shell integration in ~/.bashrc (one managed block).

@@ -86,6 +86,11 @@ CFG[STARSHIP]=0; bash_block
 bash -n "$TARGET_HOME/.bashrc" && ok "bash block (no starship) is valid bash" || bad "bash block (no starship) has a syntax error"
 # shellcheck disable=SC2016  # PS1 as Ubuntu's ~/.bashrc leaves it, before our block
 eq "Ubuntu's user@host title is dropped" "$(bash -c 'PS1="\[\e]0;\u@\h: \w\a\]\u@\h:\w\$ "; eval "$(grep "^PS1=" "$1")"; printf %s "$PS1"' _ "$TARGET_HOME/.bashrc")" '\u@\h:\w$ '
+mkdir -p "$TARGET_HOME/.nvm"; echo '[ "$NVM_DIR" = "$HOME/.nvm" ] && NVM_TEST=loaded' >"$TARGET_HOME/.nvm/nvm.sh"
+CFG[NODE]=1; profile_block
+eq "~/.profile loads nvm in a shell that is not interactive (dash)" "$(env -i HOME="$TARGET_HOME" dash -c '. "$HOME/.profile"; echo "${NVM_TEST:-missing}"')" "loaded"
+( CFG[NODE]=0; profile_block )
+eq "~/.profile without Node loads no nvm" "$(env -i HOME="$TARGET_HOME" dash -c '. "$HOME/.profile"; echo "${NVM_TEST:-missing}"')" "missing"
 miss=""
 while read -r p; do [[ -n "${PIN_APPLY[$p]:-}" ]] || miss+=" $p"; done < <(grep -oE '^[A-Z0-9_]+_(VERSION|MINOR)=' versions.conf | sed -E 's/_(VERSION|MINOR)=//')
 eq "update knows how to apply every pinned tool" "${miss:-none}" "none"
