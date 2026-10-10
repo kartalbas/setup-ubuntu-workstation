@@ -70,7 +70,9 @@ server `NAME` of that file and prints only the answer (a reasoning model's
 thinking is left out). An agent hands a long read to it, a CI log or a
 screenshot, and reads the short answer: `gh run view 1 --log-failed | llm-ask
 llm2 "Which tests failed, and why?" -`. The token travels in a header, never on
-the command line; `llm-ask --list` shows the servers.
+the command line; `llm-ask --list` shows the servers. Where Claude Code is
+on, a block in `~/.claude/CLAUDE.md` tells every session what it is for: a
+helper, never the deciding review; the rest of that file stays yours.
 
 **Podman Desktop** (`PODMAN_DESKTOP`) shows the local Docker's containers,
 images and volumes in a window: logs, a terminal in a container, stop, restart,

@@ -13,10 +13,21 @@ ai_setup() {
     atomic_write "$BIN_DIR/claude-llm" 0755 <"$REPO_ROOT/tools/claude-llm"
     claude_llm_links
   fi
-  on LLM_ASK && atomic_write "$BIN_DIR/llm-ask" 0755 <"$REPO_ROOT/tools/llm-ask"
+  if on LLM_ASK; then
+    atomic_write "$BIN_DIR/llm-ask" 0755 <"$REPO_ROOT/tools/llm-ask"
+    on CLAUDE_CODE && llm_ask_note
+  fi
   on AGY && vendor_installer "Antigravity CLI (agy)" "https://antigravity.google/cli/install.sh" agy
   on MUSE && vendor_installer "Muse Code (muse)" "https://dev.meta.ai/install.sh" muse
   return 0
+}
+
+# llm_ask_note — tells every Claude Code session of this account what llm-ask
+# is for: a block in ~/.claude/CLAUDE.md, which Claude Code reads in every
+# session; the rest of that file is yours.
+llm_ask_note() {
+  managed_block "$TARGET_HOME/.claude/CLAUDE.md" setup-ubuntu-workstation <"$REPO_ROOT/templates/claude-llm-ask.md"
+  log_ok "llm-ask: named in ~/.claude/CLAUDE.md for Claude Code"
 }
 
 # claude_code_install — Anthropic's native installer, CLAUDE_CHANNEL (latest or

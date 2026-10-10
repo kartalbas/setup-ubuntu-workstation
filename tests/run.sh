@@ -168,6 +168,12 @@ f="$tmp/bashrc"; printf 'mine 1\nmine 2\n' >"$f"
 printf 'A\n' | managed_block "$f" test; printf 'B\n' | managed_block "$f" test
 eq "block replaced, rest kept" "$(tr '\n' '|' <"$f")" "mine 1|mine 2|# >>> test >>>|B|# <<< test <<<|"
 
+echo "llm-ask note"
+( TARGET_HOME="$tmp/n"; mkdir -p "$TARGET_HOME/.claude"; printf 'my own rule\n' >"$TARGET_HOME/.claude/CLAUDE.md"
+  llm_ask_note; llm_ask_note ) >/dev/null 2>&1
+eq "~/.claude/CLAUDE.md: your lines stay, the note stands once" \
+  "$(grep -c 'my own rule' "$tmp/n/.claude/CLAUDE.md") $(grep -c '^`llm-ask NAME' "$tmp/n/.claude/CLAUDE.md")" "1 1"
+
 echo "swap"
 CFG[SWAP_GB]="16"; eq "SWAP_GB: a number of GB" "$(swap_gb)" "16"
 CFG[SWAP_GB]="08"; eq "SWAP_GB: leading zero is still decimal" "$(swap_gb)" "8"
