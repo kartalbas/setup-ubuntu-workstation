@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+# Managed by setup-ubuntu-workstation: one question to one of your own LLM
+# servers, with URL, token and model from OpenCode's config
+# (~/.config/opencode/opencode.json), as claude-llm reads them.
+#   llm-ask NAME QUESTION [FILE]     FILE: a text file, an image, or - for stdin
+#   llm-ask --list
+# It speaks the OpenAI chat API (/v1/chat/completions), as llama.cpp's
+# llama-server does. The token travels in a header, never on the command line.
+# Only the answer is printed: a reasoning model's thinking comes apart from it
+# (reasoning_content) and is left out.
+import base64
+import json
+import mimetypes
+import os
+import sys
+import urllib.error
+import urllib.request
+
+CONFIG = os.path.expanduser('~/.config/opencode/opencode.json')
+# A server with one slot answers one request at a time; the others wait in its
+# queue, so the wait for an answer is long.
+TIMEOUT = 900
+
+
+def main():
+    prog, args = os.path.basename(sys.argv[0]), sys.argv[1:]
+    try:
+        with open(CONFIG) as f:
+            servers = json.load(f).get('provider', {})
+    except OSError:
+        sys.exit(f'{prog}: no {CONFIG} yet — set it up with: ./setup.sh opencode')
+    if not args or args[0] in ('-h', '--help', '--list'):
+        for name, server in servers.items():
+            print(f"{name:12} {server.get('options', {}).get('baseURL', '')}")
+        if not args or args[0] != '--list':
+            print(f'usage: {prog} NAME QUESTION [FILE|-]', file=sys.stderr)
+        sys.exit(0 if args and args[0] == '--list' else 2)
+    if len(args) not in (2, 3):
+        sys.exit(f'usage: {prog} NAME QUESTION [FILE|-]')
+    name, question = args[0], args[1]
+    server = servers.get(name) or sys.exit(f'{prog}: no server "{name}" in {CONFIG} (there: {", ".join(servers)})')
+    options = server.get('options', {})
+    model = next(iter(server.get('models', {}).values()), {})
+    content = [{'type': 'text', 'text': question}]
+    if len(args) == 3:
+        content.append(attachment(prog, args[2]))
+    url = options.get('baseURL', '').rstrip('/') + '/chat/completions'
+    request = urllib.request.Request(
+        url,
+        data=json.dumps({'model': model.get('id', ''), 'messages': [{'role': 'user', 'content': content}]}).encode(),
+        headers={'Content-Type': 'application/json', 'Authorization': f"Bearer {options.get('apiKey', '')}"})
+    try:
+        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+            answer = json.load(response)
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            sys.exit(f'{prog}: {name} refused the token from {CONFIG} ({e.code})')
+        sys.exit(f'{prog}: {name} answered {e.code}: {e.read().decode(errors="replace")[:300]}')
+    except (urllib.error.URLError, TimeoutError) as e:
+        sys.exit(f'{prog}: {name} at {url} did not answer: {getattr(e, "reason", e)}')
+    print(answer['choices'][0]['message'].get('content') or '')
+
+
+# attachment — the file as a second part of the question: an image as a data
+# URL (the server needs its vision projector), anything else as text.
+def attachment(prog, path):
+    if path == '-':
+        return {'type': 'text', 'text': sys.stdin.read()}
+    try:
+        with open(path, 'rb') as f:
+            data = f.read()
+    except OSError as e:
+        sys.exit(f'{prog}: {path}: {e.strerror}')
+    kind = mimetypes.guess_type(path)[0] or ''
+    if kind.startswith('image/'):
+        return {'type': 'image_url', 'image_url': {'url': f'data:{kind};base64,' + base64.b64encode(data).decode()}}
+    return {'type': 'text', 'text': data.decode(errors='replace')}
+
+
+if __name__ == '__main__':
+    main()

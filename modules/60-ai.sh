@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# modules/60-ai.sh — AI coding agents (C16-18, 68, 70, 74), in the home. Claude
+# modules/60-ai.sh — AI coding agents (C16-18, 68, 70, 74, 84), in the home. Claude
 # Code, agy and Muse come through their vendors' installers (to ~/.local/bin;
 # Claude Code checks its download's SHA-256 and updates itself), Codex and
 # OpenCode from pinned GitHub releases.
@@ -13,6 +13,7 @@ ai_setup() {
     atomic_write "$BIN_DIR/claude-llm" 0755 <"$REPO_ROOT/tools/claude-llm"
     claude_llm_links
   fi
+  on LLM_ASK && atomic_write "$BIN_DIR/llm-ask" 0755 <"$REPO_ROOT/tools/llm-ask"
   on AGY && vendor_installer "Antigravity CLI (agy)" "https://antigravity.google/cli/install.sh" agy
   on MUSE && vendor_installer "Muse Code (muse)" "https://dev.meta.ai/install.sh" muse
   return 0

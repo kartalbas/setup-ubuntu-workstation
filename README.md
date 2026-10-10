@@ -19,8 +19,8 @@ sudo ./setup.sh system         # the system part (packages, browsers, Docker)
 
 | Where | What |
 |---|---|
-| your home (`./setup.sh install`) | programs in `~/.local/bin` and `~/.local/opt` (kitty, PowerShell, Antigravity, Neovim, Go, Java, .NET, gcloud, the command-line tools, Kubernetes and cloud CLIs, Claude Code, Codex, OpenCode), fonts, menu entries, the Files app and Nemo additions, GNOME extensions, settings; nvm/Node, uv/Python, Flutter, Rust |
-| the system (`sudo ./setup.sh system`) | Ubuntu packages (git, build-essential, htop, Ptyxis, Nemo, database clients, …), Chrome, Edge and VS Code (their apt repositories: `sudo apt upgrade` updates them), Chromium (snap, updates itself), Ghostty and Beyond Compare (.deb), Docker Engine with you in the `docker` group (docker then works without sudo), an AppArmor profile that lets Antigravity use Chromium's sandbox, as Ubuntu's own profiles do for VS Code and Chrome, a swap file (`SWAP_GB`, 16 GB) when the machine has no swap, and /tmp on the disk (`TMP_ON_DISK`; since 24.10 Ubuntu mounts it in RAM, up to half of it, so a big file there takes memory from the programs), emptied at every start as before |
+| your home (`./setup.sh install`) | programs in `~/.local/bin` and `~/.local/opt` (kitty, PowerShell, Antigravity, Neovim, Go, Java, .NET, gcloud, the command-line tools, Kubernetes and cloud CLIs, Claude Code, Codex, OpenCode), fonts, menu entries, the Files app and Nemo additions, GNOME extensions, settings; nvm/Node, uv/Python, Flutter, Rust; Podman Desktop (`PODMAN_DESKTOP`, from Flathub into your own Flatpak installation: `flatpak update --user` updates it) |
+| the system (`sudo ./setup.sh system`) | Ubuntu packages (git, build-essential, htop, Ptyxis, Nemo, database clients, …), Chrome, Edge and VS Code (their apt repositories: `sudo apt upgrade` updates them), Chromium (snap, updates itself), Ghostty and Beyond Compare (.deb), Docker Engine with you in the `docker` group (docker then works without sudo), flatpak for Podman Desktop, an AppArmor profile that lets Antigravity use Chromium's sandbox, as Ubuntu's own profiles do for VS Code and Chrome, a swap file (`SWAP_GB`, 16 GB) when the machine has no swap, and /tmp on the disk (`TMP_ON_DISK`; since 24.10 Ubuntu mounts it in RAM, up to half of it, so a big file there takes memory from the programs), emptied at every start as before |
 
 `install` checks the system part first and names what is missing.
 
@@ -63,6 +63,21 @@ Anthropic's Messages API (llama-server does) and its chat template has to take
 a system message in the middle of a conversation, which Claude Code sends.
 Anthropic does not support other models in Claude Code: it works, but a Claude
 Code update may break it.
+
+**One question to the same servers**: `llm-ask NAME QUESTION [FILE]` sends a
+question, and with it a text file, an image or `-` for standard input, to the
+server `NAME` of that file and prints only the answer (a reasoning model's
+thinking is left out). An agent hands a long read to it, a CI log or a
+screenshot, and reads the short answer: `gh run view 1 --log-failed | llm-ask
+llm2 "Which tests failed, and why?" -`. The token travels in a header, never on
+the command line; `llm-ask --list` shows the servers.
+
+**Podman Desktop** (`PODMAN_DESKTOP`) shows the local Docker's containers,
+images and volumes in a window: logs, a terminal in a container, stop, restart,
+delete. It reads Docker's socket and changes nothing in Docker, as long as you
+skip its offer to set up Podman at the first start and leave Settings → Docker
+Compatibility off: that setting binds Podman to Docker's socket path. Your
+account has to be in the `docker` group.
 
 ## The terminals
 

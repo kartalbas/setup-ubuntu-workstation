@@ -36,6 +36,7 @@ system_packages() {
   on VSCODE && p+=(code)
   if on DOCKER_CLI || on DOCKER_ENGINE; then p+=(docker-ce-cli docker-buildx-plugin docker-compose-plugin); fi
   on DOCKER_ENGINE && p+=(docker-ce containerd.io)
+  on PODMAN_DESKTOP && p+=(flatpak)        # Podman Desktop comes from Flathub, into the home
   (( ${#p[@]} )) && printf '%s\n' "${p[@]}" | awk '!seen[$0]++'
   return 0
 }

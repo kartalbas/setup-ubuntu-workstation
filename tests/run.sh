@@ -99,9 +99,42 @@ printf 'KITTY_VERSION="999.0"\nKITTY_URL="u"\nKITTY_SHA256="s"\nPWSH_VERSION="0.
 eq "versions.local.conf: newer wins, older is ignored" "$(cut -d' ' -f1 "$tmp/vl.out") $(grep -c '^PWSH_VERSION="0.1"' versions.conf)" "999.0 0"
 python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' templates/nautilus-open-in.py \
   && ok "Files app extension compiles" || bad "Files app extension does not compile"
-for t in tools/claude-llm tools/asar-file.py; do
+for t in tools/claude-llm tools/llm-ask tools/asar-file.py; do
   python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$t" && ok "$t parses" || bad "$t does not parse"
 done
+
+echo "llm-ask"
+# A stand-in server: it keeps the last request and refuses any token but 'good'.
+cat >"$tmp/llmd.py" <<'PY'
+import http.server, json, sys
+class H(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+        auth = self.headers.get('Authorization')
+        open(sys.argv[1], 'w').write(json.dumps({'path': self.path, 'auth': auth, 'body': body}))
+        if auth != 'Bearer good':
+            self.send_response(401); self.end_headers(); return
+        self.send_response(200); self.end_headers()
+        self.wfile.write(json.dumps({'choices': [{'message': {'content': 'the answer', 'reasoning_content': 'thinking'}}]}).encode())
+    def log_message(self, *a): pass
+s = http.server.HTTPServer(('127.0.0.1', 0), H); print(s.server_port, flush=True); s.serve_forever()
+PY
+python3 "$tmp/llmd.py" "$tmp/llmd.req" >"$tmp/llmd.port" & llmd=$!
+for _ in $(seq 50); do [[ -s "$tmp/llmd.port" ]] && break; sleep 0.1; done
+port="$(cat "$tmp/llmd.port")" lh="$tmp/llmhome"; mkdir -p "$lh/.config/opencode"
+printf '{"provider":{"s1":{"options":{"baseURL":"http://127.0.0.1:%s/v1/","apiKey":"good"},"models":{"m":{"id":"mod-1"}}},"s2":{"options":{"baseURL":"http://127.0.0.1:%s/v1","apiKey":"stale"},"models":{}}}}' \
+  "$port" "$port" >"$lh/.config/opencode/opencode.json"
+req() { python3 -c 'import json, sys; r = json.load(open(sys.argv[1])); print(eval(sys.argv[2]))' "$tmp/llmd.req" "$1"; }
+eq "the answer, not the thinking" "$(HOME="$lh" python3 tools/llm-ask s1 'why?')" "the answer"
+eq "chat completions, with the model, the token in a header" "$(req '" ".join([r["path"], r["body"]["model"], r["auth"]])')" "/v1/chat/completions mod-1 Bearer good"
+printf 'log line\n' | HOME="$lh" python3 tools/llm-ask s1 'sum up' - >/dev/null
+eq "standard input travels after the question" "$(req '[p["text"] for p in r["body"]["messages"][0]["content"]]')" "['sum up', 'log line\\n']"
+printf '\x89PNG' >"$tmp/shot.png"; HOME="$lh" python3 tools/llm-ask s1 'what is shown?' "$tmp/shot.png" >/dev/null
+eq "an image travels as a data URL" "$(req 'r["body"]["messages"][0]["content"][1]["image_url"]["url"]')" "data:image/png;base64,iVBORw=="
+eq "a refused token names the file it came from" "$(HOME="$lh" python3 tools/llm-ask s2 'x' 2>&1 >/dev/null; echo "rc $?")" \
+  "llm-ask: s2 refused the token from $lh/.config/opencode/opencode.json (401)"$'\n'"rc 1"
+eq "an unknown server names the ones there" "$(HOME="$lh" python3 tools/llm-ask s9 'x' 2>&1)" "llm-ask: no server \"s9\" in $lh/.config/opencode/opencode.json (there: s1, s2)"
+kill "$llmd" 2>/dev/null
 X="a&b"; mkdir -p "$tmp/templates"; printf '@X@' >"$tmp/templates/t"
 eq "render keeps & literal" "$(REPO_ROOT="$tmp" render t)" "a&b"
 ( unset KITTY_SHELL; render kitty.conf ) >/dev/null 2>&1 && bad "missing value accepted" || ok "render fails on a missing value"

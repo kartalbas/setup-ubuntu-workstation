@@ -106,6 +106,7 @@ doctor() {
   _tool MUSE "Muse Code" muse --version
   _tool OPENCODE "OpenCode" opencode --version
   _tool CLAUDE_LLM "Claude on your LLMs" "claude-llm --list | cut -d' ' -f1 | tr '\n' ' '"
+  _tool LLM_ASK "Questions to your LLMs" "llm-ask --list | cut -d' ' -f1 | tr '\n' ' '"
   _tool GIT "git" git --version
   _tool GH "gh" "gh --version | head -1"
   _tool GIT_LFS "git-lfs" git lfs version
@@ -148,6 +149,7 @@ doctor() {
   _tool ARGOCD "argocd" "argocd version --client --short"
   _tool TKN "tkn" "tkn version | head -1"
   _tool ARGO "argo / rollouts" "echo argo \$(argo version --short 2>/dev/null | head -1) · \$(kubectl-argo-rollouts version --short 2>/dev/null | head -1)"
+  _tool PODMAN_DESKTOP "Podman Desktop" "flatpak info --user io.podman_desktop.PodmanDesktop | sed -n 's/^ *Version: //p' | grep ."
   _tool AZURE_CLI "Azure CLI" "az version --query '\"azure-cli\"' -o tsv"
   _tool GCLOUD "gcloud" "gcloud --version 2>/dev/null | head -1"
   _tool TERRAFORM "terraform" "terraform version | head -1"
