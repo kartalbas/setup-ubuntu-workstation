@@ -115,7 +115,8 @@ class H(http.server.BaseHTTPRequestHandler):
         if auth != 'Bearer good':
             self.send_response(401); self.end_headers(); return
         self.send_response(200); self.end_headers()
-        self.wfile.write(json.dumps({'choices': [{'message': {'content': 'the answer', 'reasoning_content': 'thinking'}}]}).encode())
+        silent = body['messages'][0]['content'][0]['text'] == 'silent'
+        self.wfile.write(json.dumps({'choices': [{'finish_reason': 'stop', 'message': {'content': '' if silent else 'the answer', 'reasoning_content': 'thinking'}}]}).encode())
     def log_message(self, *a): pass
 s = http.server.HTTPServer(('127.0.0.1', 0), H); print(s.server_port, flush=True); s.serve_forever()
 PY
@@ -133,6 +134,8 @@ printf '\x89PNG' >"$tmp/shot.png"; HOME="$lh" python3 tools/llm-ask s1 'what is 
 eq "an image travels as a data URL" "$(req 'r["body"]["messages"][0]["content"][1]["image_url"]["url"]')" "data:image/png;base64,iVBORw=="
 eq "a refused token names the file it came from" "$(HOME="$lh" python3 tools/llm-ask s2 'x' 2>&1 >/dev/null; echo "rc $?")" \
   "llm-ask: s2 refused the token from $lh/.config/opencode/opencode.json (401)"$'\n'"rc 1"
+eq "an empty answer fails and says so" "$(HOME="$lh" python3 tools/llm-ask s1 'silent' 2>&1 >/dev/null; echo "rc $?")" \
+  "llm-ask: s1 gave no answer (finish_reason stop); ask again, or with less input"$'\n'"rc 1"
 eq "an unknown server names the ones there" "$(HOME="$lh" python3 tools/llm-ask s9 'x' 2>&1)" "llm-ask: no server \"s9\" in $lh/.config/opencode/opencode.json (there: s1, s2)"
 kill "$llmd" 2>/dev/null
 X="a&b"; mkdir -p "$tmp/templates"; printf '@X@' >"$tmp/templates/t"

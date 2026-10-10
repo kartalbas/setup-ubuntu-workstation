@@ -58,7 +58,13 @@ def main():
         sys.exit(f'{prog}: {name} answered {e.code}: {e.read().decode(errors="replace")[:300]}')
     except (urllib.error.URLError, TimeoutError) as e:
         sys.exit(f'{prog}: {name} at {url} did not answer: {getattr(e, "reason", e)}')
-    print(answer['choices'][0]['message'].get('content') or '')
+    choice = answer['choices'][0]
+    content = choice['message'].get('content') or ''
+    # A reasoning model can think to the end and still say nothing: an empty
+    # answer is a failure, never printed as one.
+    if not content.strip():
+        sys.exit(f"{prog}: {name} gave no answer (finish_reason {choice.get('finish_reason')}); ask again, or with less input")
+    print(content)
 
 
 # attachment — the file as a second part of the question: an image as a data
