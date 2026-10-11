@@ -39,7 +39,7 @@ ${C_BOLD}COMMANDS${C_RST}
                        update all that is newer (Enter) or a selection
   login                Sign-ins: gh, Claude Code, Codex, agy, Muse, OpenCode
   doctor               Check that every enabled tool is there, with versions
-  opencode             OpenCode with your own two LLM servers (URL + token)
+  opencode             OpenCode with your own LLM servers (URL + token)
   configs [save]       Your settings from your own config repository, or back into it
   config show | set KEY VALUE
                        Show the config, or change one value (1 = on, 0 = off)
