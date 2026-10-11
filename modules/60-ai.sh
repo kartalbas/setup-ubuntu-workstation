@@ -41,23 +41,30 @@ claude_code_install() {
   vendor_installer "Claude Code" "https://claude.ai/install.sh" claude "$ch"
 }
 
-# opencode_llms — OpenCode with your own two LLM servers (llm1, llm2): asks
-# for each one's base URL and token, reads model and context size from the
-# server, writes ~/.config/opencode/opencode.json (0600). The values stay on
-# this machine; the repository has the template with placeholders only.
+# opencode_llms — OpenCode with your own LLM servers, as many as you have: asks
+# for each one's short name, base URL and token until an empty name, reads model
+# and context size from the server, writes ~/.config/opencode/opencode.json
+# (0600); the first is the default. The values stay on this machine; the
+# repository has the template with placeholders only.
 opencode_llms() {
-  local n url token name lines=""
-  for n in 1 2; do
-    read -rp "llm$n base URL (https://…/v1): " url
-    read -rsp "llm$n token: " token; echo
-    read -rp "llm$n name in OpenCode (e.g. llm$n-mymodel; Enter = llm$n-<model id>): " name
-    [[ -n "$url" && -n "$token" ]] || die "llm$n: URL and token are needed"
-    [[ "$name" =~ ^[A-Za-z0-9._-]*$ ]] || die "llm$n: the name may only have letters, digits, . _ -"
-    lines+="$url $token $name"$'\n'
+  local server url token name lines="" servers=""
+  while :; do
+    read -rp "server name (e.g. llm1; Enter = done): " server
+    [[ -n "$server" ]] || break
+    [[ "$server" =~ ^[A-Za-z0-9._-]+$ && " $servers " != *" $server "* ]] \
+      || die "$server: a new name of letters, digits, . _ - is needed"
+    read -rp "$server base URL (https://…/v1): " url
+    read -rsp "$server token: " token; echo
+    read -rp "$server name in OpenCode (e.g. $server-mymodel; Enter = $server-<model id>): " name
+    [[ -n "$url" && -n "$token" ]] || die "$server: URL and token are needed"
+    [[ "$name" =~ ^[A-Za-z0-9._-]*$ ]] || die "$server: the name may only have letters, digits, . _ -"
+    lines+="$server $url $token $name"$'\n'
+    servers+=" $server"
   done
+  [[ -n "$servers" ]] || die "no server given"
   printf '%s' "$lines" | python3 "$REPO_ROOT/tools/opencode-llms.py" \
     "$REPO_ROOT/templates/opencode.json" "$TARGET_HOME/.config/opencode/opencode.json"
-  log_ok "OpenCode: llm1 and llm2 in ~/.config/opencode/opencode.json (only on this machine)"
+  log_ok "OpenCode:$servers in ~/.config/opencode/opencode.json (only on this machine)"
   claude_llm_links
 }
 

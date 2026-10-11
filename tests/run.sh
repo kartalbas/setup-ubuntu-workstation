@@ -68,8 +68,8 @@ grep -qxE "map ctrl\+comma  *launch --type=tab nano $K/local.conf" "$K/kitty.con
 python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$K/windows_terminal.py" \
   && ok "kitty helper compiles" || bad "kitty helper does not compile"
 python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' tools/opencode-llms.py \
-  && python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); assert set(c["provider"]) == {"llm1", "llm2"}' templates/opencode.json \
-  && ok "OpenCode template (llm1, llm2) and helper are valid" || bad "OpenCode template or helper broken"
+  && python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); assert set(c["provider"]) == {"SERVER"}' templates/opencode.json \
+  && ok "OpenCode template (one server shape) and helper are valid" || bad "OpenCode template or helper broken"
 grep -qiE 'https?://[a-z0-9-]+\.[a-z]|[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' <(grep -v 'opencode.ai/config.json' templates/opencode.json) \
   && bad "OpenCode template has a real host" || ok "OpenCode template has placeholders only"
 ghostty_config

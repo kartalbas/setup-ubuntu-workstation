@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """opencode-llms.py TEMPLATE OUT — fill templates/opencode.json with the
-user's own two LLM servers (OpenAI-compatible, e.g. llama-server): reads
-"URL TOKEN [NAME]" per server from stdin (llm1 first), asks each server for its model
-and context size, writes OUT with mode 0600. Used by `./setup.sh opencode`."""
-import json, os, sys, urllib.request
+user's own LLM servers (OpenAI-compatible, e.g. llama-server): reads
+"SERVER URL TOKEN [NAME]" per server from stdin, the default first, asks each server
+for its model and context size, writes OUT with mode 0600. The template's one
+provider is the shape every server is given. Used by `./setup.sh opencode`."""
+import copy, json, os, sys, urllib.request
 
 def get(url, token):
     req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
@@ -12,8 +13,12 @@ def get(url, token):
 
 tmpl, out = sys.argv[1], sys.argv[2]
 conf = json.load(open(tmpl))
-for n, line in enumerate(sys.stdin.read().split("\n")[:2], 1):
-    url, token, *rest = line.split()
+shape = conf["provider"].pop("SERVER")
+lines = [line for line in sys.stdin.read().split("\n") if line.strip()]
+if not lines:
+    sys.exit("opencode-llms.py: no server given")
+for n, line in enumerate(lines, 1):
+    key, url, token, *rest = line.split()
     url = url.rstrip("/")
     models = get(f"{url}/models", token)["data"]
     model = models[0]["id"]
@@ -22,14 +27,15 @@ for n, line in enumerate(sys.stdin.read().split("\n")[:2], 1):
         ctx = get(f"{url.removesuffix('/v1')}/props", token)["default_generation_settings"]["n_ctx"]
     except Exception:
         pass
-    p = conf["provider"][f"llm{n}"]
-    name = rest[0] if rest else f"llm{n}-{model}"
+    p = conf["provider"][key] = copy.deepcopy(shape)
+    p["name"] = key
+    name = rest[0] if rest else f"{key}-{model}"
     p["options"] = {"baseURL": url, "apiKey": token}
     # OpenCode shows and selects the name; "id" is what the server is sent.
     p["models"] = {name: {"id": model, "name": name, "limit": {"context": ctx, "output": 32768}}}
     if n == 1:
-        conf["model"] = f"llm1/{name}"
-    print(f"llm{n}: {name} = {model} (context {ctx})", file=sys.stderr)
+        conf["model"] = f"{key}/{name}"
+    print(f"{key}: {name} = {model} (context {ctx})", file=sys.stderr)
 os.makedirs(os.path.dirname(out), exist_ok=True)
 fd = os.open(out + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
 with os.fdopen(fd, "w") as f:

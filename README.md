@@ -42,7 +42,7 @@ repeat later with `./setup.sh login`.
 | `./setup.sh config set KEY 0\|1` | switch a tool on or off |
 | `./setup.sh login` | the sign-ins above |
 | `./setup.sh doctor` | the system part, then every enabled tool with its version |
-| `./setup.sh opencode` | OpenCode with your own two LLM servers (below) |
+| `./setup.sh opencode` | OpenCode with your own LLM servers (below) |
 | `./setup.sh configs [save]` | your settings from your own config repository, or back into it (below) |
 | `./setup.sh config show` | the current settings |
 
@@ -50,13 +50,14 @@ Only `system` runs with sudo; every other command refuses it. Re-running is
 safe and brings pinned tools to the versions in `versions.conf`.
 
 **OpenCode with your own LLM servers** (OpenAI-compatible, e.g. llama-server):
-`./setup.sh opencode` asks for the base URL, token and a display name of `llm1`
-and `llm2`, reads model and context size from each server and writes
+`./setup.sh opencode` asks, server by server until an empty name, for a short name
+(`llm1`), the base URL, token and a display name, reads model and context size from
+each server and writes
 `~/.config/opencode/opencode.json` (mode 0600). URLs and tokens stay on your
 machine; the repository only has the template with placeholders
 (`templates/opencode.json`).
 
-**Claude Code on the same servers**: `claude-llm1`, `claude-llm2` (one
+**Claude Code on the same servers**: `claude-llm1` and so on (one
 `claude-<name>` per server in that file) start Claude Code with URL, token and
 model from it; `claude-llm --list` shows them. The server has to speak
 Anthropic's Messages API (llama-server does) and its chat template has to take
