@@ -24,7 +24,7 @@ terminal_setup() {
   return 0
 }
 
-# pwsh_command — PowerShell for the terminals, by its full path (a terminal
+# pwsh_command — PowerShell for the terminals' profile menu, by its full path (a terminal
 # started from the menu may not have ~/.local/bin on its PATH yet).
 pwsh_command() { printf '%s -NoLogo' "$BIN_DIR/pwsh"; }
 
@@ -48,8 +48,8 @@ kitty_install() {
 # created once and never touched again.
 kitty_config() {
   local dir="$TARGET_HOME/.config/kitty" profiles=() p n=0
-  on PWSH && profiles+=("PowerShell|$(pwsh_command)")
   profiles+=("Bash|bash -l")
+  on PWSH && profiles+=("PowerShell|$(pwsh_command)")
   KITTY_PROFILES="" KITTY_PROFILE_KEYS=""
   for p in "${profiles[@]}"; do
     n=$((n + 1))
@@ -57,7 +57,7 @@ kitty_config() {
     KITTY_PROFILE_KEYS+="$(printf 'map ctrl+shift+%-12s launch --type=tab %s' "$n" "${p#*|}")"$'\n'
   done
   KITTY_PROFILES="${KITTY_PROFILES% }" KITTY_PROFILE_KEYS="${KITTY_PROFILE_KEYS%$'\n'}"
-  KITTY_SHELL="."; on PWSH && KITTY_SHELL="$(pwsh_command)"
+  KITTY_SHELL="."
   KITTY_CONFIG_DIR="$dir"
   if on VSCODE; then KITTY_EDIT_LOCAL="launch --type=background code $dir/local.conf"
   else KITTY_EDIT_LOCAL="launch --type=tab nano $dir/local.conf"; fi
@@ -73,7 +73,6 @@ kitty_config() {
 ghostty_config() {
   local dir="$TARGET_HOME/.config/ghostty"
   GHOSTTY_COMMAND="# command: your login shell"
-  on PWSH && GHOSTTY_COMMAND="command = $(pwsh_command)"
   render ghostty.conf | atomic_write "$dir/config.ghostty"
   [[ -e "$dir/local.conf" ]] || render ghostty-local.conf | atomic_write "$dir/local.conf"
   return 0

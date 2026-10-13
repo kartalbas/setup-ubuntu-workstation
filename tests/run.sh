@@ -59,9 +59,9 @@ echo "templates"
 TARGET_HOME="$tmp/u"; set_paths; CFG[PWSH]=1 CFG[VSCODE]=0
 K="$TARGET_HOME/.config/kitty" PW="$BIN_DIR/pwsh -NoLogo"
 kitty_config
-eq "kitty.conf gets the shell (by its path)" "$(grep -cxF "shell                       $PW" "$K/kitty.conf")" "1"
-eq "kitty.conf maps the profiles" "$(grep -cxE "map ctrl\+shift\+(1  *launch --type=tab ${PW//./\\.}|2  *launch --type=tab bash -l)" "$K/kitty.conf")" "2"
-grep -qF "profiles.sh 'PowerShell|$PW|Ctrl+Shift+1' 'Bash|bash -l|Ctrl+Shift+2'" "$K/kitty.conf" \
+eq "kitty.conf opens the login shell" "$(grep -cxF "shell                       ." "$K/kitty.conf")" "1"
+eq "kitty.conf maps the profiles, Bash first" "$(grep -cxE "map ctrl\+shift\+(1  *launch --type=tab bash -l|2  *launch --type=tab ${PW//./\\.})" "$K/kitty.conf")" "2"
+grep -qF "profiles.sh 'Bash|bash -l|Ctrl+Shift+1' 'PowerShell|$PW|Ctrl+Shift+2'" "$K/kitty.conf" \
   && ok "kitty.conf passes the profiles to the menu" || bad "profile menu line: $(grep profiles.sh "$K/kitty.conf")"
 grep -qxE "map ctrl\+comma  *launch --type=tab nano $K/local.conf" "$K/kitty.conf" \
   && ok "Ctrl+, edits local.conf" || bad "Ctrl+, line: $(grep ctrl+comma "$K/kitty.conf")"
@@ -73,7 +73,7 @@ python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' 
 grep -qiE 'https?://[a-z0-9-]+\.[a-z]|[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' <(grep -v 'opencode.ai/config.json' templates/opencode.json) \
   && bad "OpenCode template has a real host" || ok "OpenCode template has placeholders only"
 ghostty_config
-eq "config.ghostty gets the shell (by its path)" "$(grep -cxF "command = $PW" "$TARGET_HOME/.config/ghostty/config.ghostty")" "1"
+eq "config.ghostty opens the login shell" "$(grep -cE '^command' "$TARGET_HOME/.config/ghostty/config.ghostty")" "0"
 eq "Shift+Insert and Ctrl+Shift+Insert paste in kitty and Ghostty (the clipboard history presses them)" \
   "$(grep -cE '^map (ctrl\+)?shift\+insert +paste_from_clipboard$' "$K/kitty.conf") $(grep -cE '^keybind = (ctrl\+)?shift\+insert=paste_from_clipboard$' "$TARGET_HOME/.config/ghostty/config.ghostty")" "2 2"
 eq "config.ghostty loads local.conf" "$(grep -c '^config-file = ?local.conf$' "$TARGET_HOME/.config/ghostty/config.ghostty")" "1"
