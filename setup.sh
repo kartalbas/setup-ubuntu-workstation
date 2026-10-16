@@ -34,6 +34,9 @@ ${C_BOLD}COMMANDS${C_RST}
   install              Everything else, into your home (~/.local): terminals,
                        shells, tools, languages, CLIs, fonts, settings
                        (idempotent: re-run it any time, e.g. after a git pull)
+  install TOOL...      Only these pinned tools, at their pinned versions (names
+                       as in versions.conf, any case: opencode, gh, k9s, …) —
+                       e.g. on a server that needs one CLI and no desktop
   update [--all|--list]
                        Every tool with its installed and newest version;
                        update all that is newer (Enter) or a selection
@@ -62,7 +65,7 @@ main() {
   cfg_load; ver_load
   case "$verb" in
     system)   system_all ;;
-    install)  install_all ;;
+    install)  if (( $# )); then install_only "$@"; else install_all; fi ;;
     update)   update_run "$@" ;;
     login)    logins_run ;;
     doctor)   doctor ;;
@@ -94,6 +97,23 @@ system_all() {
   tmp_on_disk         # 05-system: /tmp on the disk (Ubuntu 24.10+ has it in RAM)
   log_step "Done"
   log_ok "System part ready. Now, as yourself: ./setup.sh install"
+}
+
+# install_only TOOL... — just these pinned tools, with the same calls install
+# and update make for them (PIN_APPLY, modules/97-update.sh); nothing else of
+# the workstation is touched.
+install_only() {
+  cfg_init; cfg_load
+  local t key
+  for t in "$@"; do
+    key="${t^^}"; key="${key//-/_}"
+    [[ -n "${PIN_APPLY[$key]:-}" ]] || die "install: no pinned tool '$t' (one of: $(printf '%s ' "${!PIN_APPLY[@]}" | tr '[:upper:]' '[:lower:]'))"
+  done
+  for t in "$@"; do
+    key="${t^^}"; key="${key//-/_}"
+    log_step "$t"
+    eval "${PIN_APPLY[$key]}"
+  done
 }
 
 # install_all — everything else, as the user, into the home.

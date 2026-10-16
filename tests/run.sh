@@ -281,6 +281,15 @@ eq "only your own settings, without the window's size and place" \
   "[list-view]|default-column-order=[1]||[preferences]|size-prefixes='base-2'||[window-state]|side-pane-view='tree'||[x]|geometry=1|"
 rm -f "$tmp/fakebin/dconf"
 
+echo "install TOOL"
+eval "$(sed -n '/^install_only() {/,/^}/p' setup.sh)"
+( install_only no-such-tool ) >/dev/null 2>&1 && bad "an unknown tool name is accepted" || ok "an unknown tool name is refused"
+( PIN_APPLY[OPENCODE]="echo opencode >>'$tmp/only.log'"; PIN_APPLY[GH]="echo gh >>'$tmp/only.log'"
+  install_only OpenCode gh ) >/dev/null 2>&1
+eq "only the named tools, by any case, with their pinned install calls" "$(tr '\n' ' ' <"$tmp/only.log" 2>/dev/null)" "opencode gh "
+( PIN_APPLY[GH]="echo gh >>'$tmp/only2.log'"; install_only gh no-such-tool ) >/dev/null 2>&1
+[[ ! -e "$tmp/only2.log" ]] && ok "a bad name stops before anything installs" || bad "installed before refusing a bad name"
+
 echo "pwsh prompt"
 if P="$(command -v pwsh || command -v "$HOME/.local/bin/pwsh")"; then
   r="$tmp/prompt-repo"; git init -q -b main "$r"

@@ -38,6 +38,7 @@ repeat later with `./setup.sh login`.
 |---|---|
 | `sudo ./setup.sh system` | the system part; again after switching on a tool that needs it, or for a newer Ghostty / Beyond Compare |
 | `./setup.sh install` | install and configure everything else; re-run it any time (e.g. after a git pull) |
+| `./setup.sh install TOOL...` | only these pinned tools at their pinned versions (names as in `versions.conf`, any case: `opencode`, `gh`, `k9s`, …), nothing else — e.g. OpenCode on an LLM server |
 | `./setup.sh update` | every tool in your home with its installed and newest version; update all that is newer (Enter) or pick numbers (`2 5-7`); `--list` only shows, `--all` asks nothing. System packages: `sudo apt update && sudo apt upgrade` |
 | `./setup.sh config set KEY 0\|1` | switch a tool on or off |
 | `./setup.sh login` | the sign-ins above |
